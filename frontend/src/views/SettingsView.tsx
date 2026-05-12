@@ -7,6 +7,7 @@ const API_KEY = 'dashboard_anthropic_api_key'
 export default function SettingsView() {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(API_KEY) ?? '')
   const [bypassPermissions, setBypassPermissions] = useState(true)
+  const [sessionMode, setSessionMode] = useState<'chat' | 'terminal'>('chat')
   const [saved, setSaved] = useState(false)
   const [settingsLoaded, setSettingsLoaded] = useState(false)
 
@@ -15,6 +16,7 @@ export default function SettingsView() {
       .then((r) => r.json() as Promise<Record<string, string>>)
       .then((data) => {
         setBypassPermissions(data.bypass_permissions !== 'false')
+        setSessionMode(data.session_mode === 'terminal' ? 'terminal' : 'chat')
         setSettingsLoaded(true)
       })
       .catch(() => setSettingsLoaded(true))
@@ -27,7 +29,10 @@ export default function SettingsView() {
     await fetch('/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bypass_permissions: String(bypassPermissions) }),
+      body: JSON.stringify({
+        bypass_permissions: String(bypassPermissions),
+        session_mode: sessionMode,
+      }),
     }).catch(() => {})
 
     setSaved(true)
@@ -82,6 +87,28 @@ export default function SettingsView() {
         >
           <span className={`w-2 h-2 rounded-full ${bypassPermissions ? 'bg-status-green' : 'bg-text-dim'}`} />
           {bypassPermissions ? 'Bypass permissions: on' : 'Bypass permissions: off'}
+        </button>
+      </div>
+
+      {/* Session mode toggle */}
+      <div className="space-y-2">
+        <label className="text-text-secondary text-xs uppercase tracking-widest block">
+          Session Mode
+        </label>
+        <p className="text-text-muted text-xs">
+          Controls the interface for new sessions. <strong className="text-text-secondary">Chat</strong> uses the structured message view. <strong className="text-text-secondary">Terminal</strong> opens a full interactive terminal connected directly to Claude Code.
+        </p>
+        <button
+          onClick={() => setSessionMode((m) => (m === 'chat' ? 'terminal' : 'chat'))}
+          disabled={!settingsLoaded}
+          className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded border transition-colors disabled:opacity-40 ${
+            sessionMode === 'terminal'
+              ? 'border-status-green text-status-green bg-status-green/10'
+              : 'border-border-subtle text-text-muted bg-bg-elevated'
+          }`}
+        >
+          <span className={`w-2 h-2 rounded-full ${sessionMode === 'terminal' ? 'bg-status-green' : 'bg-text-dim'}`} />
+          {sessionMode === 'terminal' ? 'Session mode: terminal' : 'Session mode: chat'}
         </button>
       </div>
 
