@@ -8,6 +8,7 @@ import { accountRoutes } from './routes/account'
 import { usageRoutes } from './routes/usage'
 import { sessionRoutes } from './routes/sessions'
 import { sessionWsRoutes } from './ws/session'
+import { terminalWsRoutes } from './ws/terminal'
 import { settingsRoutes } from './routes/settings'
 
 // TODO: add bearer token auth — add @fastify/bearer-auth plugin here
@@ -34,6 +35,7 @@ async function start() {
   await fastify.register(usageRoutes)
   await fastify.register(sessionRoutes)
   await fastify.register(sessionWsRoutes)
+  await fastify.register(terminalWsRoutes)
   await fastify.register(settingsRoutes)
 
   fastify.get('/health', async () => ({ status: 'ok' }))
