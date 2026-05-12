@@ -3,6 +3,7 @@ import { db } from '../db/schema'
 
 const DEFAULTS: Record<string, string> = {
   bypass_permissions: 'true',
+  session_mode: 'chat',
 }
 
 const ALLOWED = new Set(Object.keys(DEFAULTS))
