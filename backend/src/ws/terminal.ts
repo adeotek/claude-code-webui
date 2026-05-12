@@ -78,6 +78,7 @@ class ActiveTerminalSession {
       ws.send(JSON.stringify({ type: 'status', state: 'disconnected' }))
       ws.close()
       this.sockets.delete(ws)
+      this.onCleanup(this.id)
       return
     }
     ws.send(JSON.stringify({ type: 'status', state: 'connected' }))
