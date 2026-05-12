@@ -38,6 +38,7 @@ export function useWebSocket(onOutput: (data: string) => void) {
             outputTokens?: number
             totalTokens?: number
             workingTimeMs?: number
+            permissions?: Array<{ tool: string; summary: string }>
           }
           if (msg.type === 'output' && msg.data) {
             onOutput(msg.data)
@@ -52,6 +53,8 @@ export function useWebSocket(onOutput: (data: string) => void) {
             dispatch({ type: 'TOKENS_ADDED', inputTokens: msg.inputTokens, outputTokens: msg.outputTokens })
           } else if (msg.type === 'session_state') {
             dispatch({ type: 'STATS_RESTORED', totalTokens: msg.totalTokens ?? 0, workingTimeMs: msg.workingTimeMs ?? 0 })
+          } else if (msg.type === 'permission_request' && Array.isArray(msg.permissions)) {
+            dispatch({ type: 'PERMISSION_REQUEST', permissions: msg.permissions })
           } else if (msg.type === 'history' && Array.isArray(msg.messages)) {
             const history = msg.messages.map((m) => ({
               id: Date.now().toString(36) + Math.random().toString(36).slice(2),

@@ -7,6 +7,11 @@ export interface Message {
   createdAt: number
 }
 
+export interface PermissionRequest {
+  tool: string
+  summary: string
+}
+
 export interface SessionState {
   sessionId: string | null
   workdir: string | null
@@ -17,6 +22,7 @@ export interface SessionState {
   workingTimeMs: number       // cumulative ms spent in 'running' state
   runningStartedAt: number | null  // timestamp when current run period began
   totalTokens: number         // cumulative input+output tokens for this session
+  pendingPermissions: PermissionRequest[] | null
 }
 
 type Action =
@@ -30,6 +36,8 @@ type Action =
   | { type: 'SESSION_RENAMED'; name: string | null }
   | { type: 'TOKENS_ADDED'; inputTokens: number; outputTokens: number }
   | { type: 'STATS_RESTORED'; totalTokens: number; workingTimeMs: number }
+  | { type: 'PERMISSION_REQUEST'; permissions: PermissionRequest[] }
+  | { type: 'PERMISSION_CLEARED' }
 
 const initial: SessionState = {
   sessionId: null,
@@ -41,16 +49,17 @@ const initial: SessionState = {
   workingTimeMs: 0,
   runningStartedAt: null,
   totalTokens: 0,
+  pendingPermissions: null,
 }
 
 function reducer(state: SessionState, action: Action): SessionState {
   switch (action.type) {
     case 'SESSION_CREATED':
-      return { ...state, sessionId: action.sessionId, workdir: action.workdir, name: action.name ?? null, messages: [], wsState: 'connecting', workingTimeMs: 0, runningStartedAt: null }
+      return { ...state, sessionId: action.sessionId, workdir: action.workdir, name: action.name ?? null, messages: [], wsState: 'connecting', workingTimeMs: 0, runningStartedAt: null, pendingPermissions: null }
     case 'SESSION_CLEARED':
       return { ...initial }
     case 'RESUME_SESSION':
-      return { ...state, sessionId: action.id, workdir: action.workdir, name: action.name ?? null, messages: [], wsState: 'connecting', workingTimeMs: 0, runningStartedAt: null, totalTokens: 0 }
+      return { ...state, sessionId: action.id, workdir: action.workdir, name: action.name ?? null, messages: [], wsState: 'connecting', workingTimeMs: 0, runningStartedAt: null, totalTokens: 0, pendingPermissions: null }
     case 'WS_STATE': {
       const prev = state.wsState
       const next = action.state
@@ -75,6 +84,10 @@ function reducer(state: SessionState, action: Action): SessionState {
       return { ...state, totalTokens: state.totalTokens + action.inputTokens + action.outputTokens }
     case 'STATS_RESTORED':
       return { ...state, totalTokens: action.totalTokens, workingTimeMs: action.workingTimeMs }
+    case 'PERMISSION_REQUEST':
+      return { ...state, pendingPermissions: action.permissions }
+    case 'PERMISSION_CLEARED':
+      return { ...state, pendingPermissions: null }
     default:
       return state
   }

@@ -8,15 +8,18 @@ import { useResizableHeight } from '../hooks/useResizableHeight'
 export interface TerminalDrawerHandle {
   write: (data: string) => void
   sendResize: (cb: (cols: number, rows: number) => void) => void
+  open: () => void
 }
 
-const TerminalDrawer = forwardRef<TerminalDrawerHandle, { wsState: string }>(
-  ({ wsState }, ref) => {
+const TerminalDrawer = forwardRef<TerminalDrawerHandle, { wsState: string; onInput?: (data: string) => void }>(
+  ({ wsState, onInput }, ref) => {
     const [open, setOpen] = useState(false)
     const containerRef = useRef<HTMLDivElement>(null)
     const termRef = useRef<Terminal | null>(null)
     const fitRef = useRef<FitAddon | null>(null)
     const onResizeCbRef = useRef<((cols: number, rows: number) => void) | null>(null)
+    const onInputRef = useRef<((data: string) => void) | undefined>(onInput)
+    onInputRef.current = onInput
     const { height: termHeight, onDragStart } = useResizableHeight(200, 80, 600)
 
     useEffect(() => {
@@ -41,6 +44,7 @@ const TerminalDrawer = forwardRef<TerminalDrawerHandle, { wsState: string }>(
         term.open(containerRef.current)
         fit.fit()
         term.onResize(({ cols, rows }) => onResizeCbRef.current?.(cols, rows))
+        term.onData((data) => onInputRef.current?.(data))
       }
 
       return () => term.dispose()
@@ -55,6 +59,7 @@ const TerminalDrawer = forwardRef<TerminalDrawerHandle, { wsState: string }>(
     useImperativeHandle(ref, () => ({
       write: (data) => termRef.current?.write(data),
       sendResize: (cb) => { onResizeCbRef.current = cb },
+      open: () => setOpen(true),
     }))
 
     const isRunning = wsState === 'running'

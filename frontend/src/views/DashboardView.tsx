@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useSession } from '../context/SessionContext'
 import { useWebSocket } from '../hooks/useWebSocket'
@@ -12,6 +12,7 @@ import ChatInput from '../components/ChatInput'
 import TerminalDrawer, { type TerminalDrawerHandle } from '../components/TerminalDrawer'
 import NewSessionModal from '../components/NewSessionModal'
 import UsageChart from '../components/UsageChart'
+import PermissionDialog from '../components/PermissionDialog'
 
 export default function DashboardView() {
   const { state, dispatch } = useSession()
@@ -20,7 +21,6 @@ export default function DashboardView() {
   const [chartOpen, setChartOpen] = useState(false)
 
   const { account, usage, sessions, activeSessions, loading, refresh } = useDashboard()
-
   // Local sessions state for optimistic deletion
   const [localSessions, setLocalSessions] = useState<Session[] | null>(null)
   const displaySessions = localSessions ?? sessions
@@ -37,6 +37,19 @@ export default function DashboardView() {
   }, [])
 
   const { send } = useWebSocket(onOutput)
+
+  const handleTerminalInput = useCallback(
+    (data: string) => send({ type: 'input', data }),
+    [send],
+  )
+
+  // Register PTY resize callback once the terminal mounts
+  useEffect(() => {
+    terminalRef.current?.sendResize((cols, rows) => {
+      send({ type: 'resize', cols, rows })
+    })
+  }, [send])
+
 
   function handleSessionStart(sessionId: string, workdir: string, name: string | null) {
     dispatch({ type: 'SESSION_CREATED', sessionId, workdir, ...(name ? { name } : {}) })
@@ -98,6 +111,17 @@ export default function DashboardView() {
     refresh()
   }
 
+  function handlePermissionAllow(tools: string[]) {
+    const lastUserMsg = [...state.messages].reverse().find((m) => m.role === 'user')
+    dispatch({ type: 'PERMISSION_CLEARED' })
+    send({ type: 'permission_set', allowedTools: tools })
+    if (lastUserMsg) handleSend(lastUserMsg.content)
+  }
+
+  function handlePermissionDismiss() {
+    dispatch({ type: 'PERMISSION_CLEARED' })
+  }
+
   function handleDelete(sessionId: string) {
     setLocalSessions((prev) => {
       const base = prev ?? sessions
@@ -135,7 +159,14 @@ export default function DashboardView() {
 
       {/* Main area */}
       {state.sessionId ? (
-        <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="flex flex-col flex-1 overflow-hidden relative">
+          {state.pendingPermissions && (
+            <PermissionDialog
+              permissions={state.pendingPermissions}
+              onAllow={handlePermissionAllow}
+              onDismiss={handlePermissionDismiss}
+            />
+          )}
           <SessionHeader
             onNewSession={handleNewSession}
             onStopSession={handleStopSession}
@@ -146,7 +177,7 @@ export default function DashboardView() {
             sessionStartedAt={activeSession?.started_at ?? null}
           />
           <MessageList messages={state.messages} />
-          <TerminalDrawer ref={terminalRef} wsState={state.wsState} />
+          <TerminalDrawer ref={terminalRef} wsState={state.wsState} onInput={handleTerminalInput} />
           <ChatInput
             onSend={handleSend}
             disabled={state.wsState === 'disconnected' || state.wsState === 'error'}
