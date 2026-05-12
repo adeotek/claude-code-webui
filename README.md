@@ -1,80 +1,70 @@
-# Claude Code Web UI Proxy
+# Claude Code Web UI
 
-Web UI Proxy for [Claude Code](https://claude.ai/code) — view account info, usage graphs, and manage Claude sessions from the browser.
+[![CI](https://github.com/adeotek/claude-code-webui/actions/workflows/claude-code-webui-ci.yml/badge.svg)](https://github.com/adeotek/claude-code-webui/actions/workflows/claude-code-webui-ci.yml)
+[![Docker](https://img.shields.io/badge/docker-ghcr.io-blue)](https://github.com/adeotek/claude-code-webui/pkgs/container/claude-code-webui)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-**Stack:** Fastify + TypeScript backend · Vite + React + Tailwind CSS frontend · SQLite session cache · xterm.js terminal · recharts usage graph
+A browser-based UI for [Claude Code](https://claude.ai/code) — manage sessions, track token usage, and chat with Claude from any device on your network.
 
-In production the backend serves the built frontend on a single port. In development Vite runs separately with HMR and proxies API/WS calls to the backend.
+## Features
 
-## Prerequisites
+- **Session management** — create, resume, rename, and delete Claude Code sessions
+- **Real-time chat** — markdown rendering with syntax-highlighted code blocks
+- **Terminal drawer** — integrated xterm.js terminal that persists across view switches
+- **Usage dashboard** — daily token usage graph with optional Anthropic billing data
+- **Account overview** — Claude version, authentication status, and model info
+- **Persistent history** — session messages and token counts stored in SQLite
 
-- Node.js ≥ 20
-- `claude` CLI [installed](https://claude.ai/code) and authenticated on the host
+## Quick Start
 
-## Running
+### Linux / macOS
 
-### Option 1 — Production script (Linux / macOS)
+Requires Node.js ≥ 20 and the `claude` CLI [installed and authenticated](https://claude.ai/code).
 
 ```bash
-./run.sh          # install deps, build, start
-# or: make run
+git clone https://github.com/adeotek/claude-code-webui.git
+cd claude-code-webui
+./run.sh
 ```
 
+Open **http://localhost:9998**.
+
+`run.sh` creates `backend/.env` from `.env.example` on first run, installs dependencies, builds both packages, and starts the server.
+
+### Windows (PowerShell 7+)
+
+Requires Node.js ≥ 20 and the `claude` CLI [installed and authenticated](https://claude.ai/code).
+
 ```powershell
-# Windows (PowerShell 7)
+git clone https://github.com/adeotek/claude-code-webui.git
+cd claude-code-webui
 .\run.ps1
 ```
 
-Both scripts create `backend/.env` from `.env.example` on first run, load it, build both packages, and start the server.
+Open **http://localhost:9998**.
 
-Dashboard available at **http://localhost:9998** (or `PORT` from your `.env`).
+### Docker (all platforms)
 
-### Option 2 — Docker
+Requires Docker and the `claude` CLI installed and authenticated on the host.
 
 ```bash
+git clone https://github.com/adeotek/claude-code-webui.git
+cd claude-code-webui
 docker-compose up
 ```
 
-Dashboard available at **http://localhost:8080**.
+Open **http://localhost:8080**.
 
-`docker-compose.yml` mounts `~/.claude` (read-only) and `~/projects` (read-write) from the host.
-
-To build the image locally instead of pulling:
+`docker-compose.yml` mounts `~/.claude` (read-only) and `~/projects` (read-write) from the host. To build the image locally instead of pulling from the registry:
 
 ```bash
 docker build -t claude-code-webui .
 docker-compose up
 ```
 
-### Option 3 — Systemd user service (Linux)
-
-Installs the dashboard as a persistent user-level service that starts automatically at boot (with lingering):
-
-```bash
-make service-install
-# or to skip the build step if already built:
-make service-install ARGS=--skip-build
-```
-
-Reads `backend/.env` and generates `~/.config/systemd/user/claude-code-dashboard.env`. The service runs under your user account — no root required.
-
-```bash
-make service-uninstall          # stop, disable, remove unit file
-systemctl --user status claude-code-dashboard
-journalctl --user -u claude-code-dashboard -f
-```
-
-## Development
-
-```bash
-cp .env.example backend/.env    # configure environment
-make install                    # npm install in both packages
-make dev                        # backend :9998 + frontend :9999 (HMR)
-```
-
-Vite proxies `/api` and `/ws` to the backend and binds to `0.0.0.0`, so the dev server is reachable from the LAN at `http://<host-ip>:9999`.
-
 ## Configuration
+
+Copy `.env.example` to `backend/.env` and edit as needed:
 
 ```bash
 cp .env.example backend/.env
@@ -85,74 +75,53 @@ cp .env.example backend/.env
 | `ANTHROPIC_API_KEY` | — | Optional — enables billing data in the Usage view |
 | `CLAUDE_BIN` | `claude` | Path to the `claude` binary |
 | `PORT` | `9998` | Backend listen port |
+| `HOST` | `0.0.0.0` | Backend listen address |
 | `FRONTEND_ORIGIN` | `http://localhost:9999` | Allowed CORS origin (dev only) |
 
-## Commands
+## Development
 
 ```bash
-make dev              # start backend + frontend dev servers concurrently
-make build            # compile backend TS + Vite production bundle
-make install          # npm install in both packages
-make lint             # tsc --noEmit in both packages
-make clean            # remove dist/ directories
-make run              # production build + start (wraps run.sh)
+cp .env.example backend/.env
+make install    # npm install in both packages
+make dev        # backend :9998 + frontend :9999 with HMR
+```
 
-make service-install  # install as systemd user service
+The Vite dev server binds to `0.0.0.0`, so it's reachable from the LAN at `http://<host-ip>:9999`.
+
+## Systemd service (Linux)
+
+Installs the UI as a persistent user-level service that starts automatically at boot:
+
+```bash
+make service-install
+# Skip the build step if already built:
+make service-install ARGS=--skip-build
+```
+
+```bash
 make service-uninstall
-make service-test     # run service install test suite
+systemctl --user status claude-code-dashboard
+journalctl --user -u claude-code-dashboard -f
 ```
 
-## Project structure
+## Commands reference
 
-```
-backend/src/
-  server.ts              # Fastify entry (CORS, WebSocket, static serving)
-  routes/
-    account.ts           # GET /api/account
-    usage.ts             # GET /api/usage
-    sessions.ts          # GET /api/directories, GET/POST /api/sessions, POST /:id/stop, PATCH /:id, GET /:id/messages, DELETE /:id
-    settings.ts          # GET/POST /api/settings
-  ws/
-    session.ts           # WebSocket handler — headless claude subprocess
-  services/
-    claudeAccount.ts     # Parse ~/.claude/settings.json + claude --version
-    localLogs.ts         # Parse ~/.claude/projects/**/*.jsonl for usage
-    anthropicApi.ts      # Anthropic billing API client
-    oauthUsage.ts        # OAuth-based usage data
-    usageCache.ts        # SQLite cache with 1 hr TTL
-  db/
-    schema.ts            # better-sqlite3 init + migrations
+| Command | Description |
+|---|---|
+| `make dev` | Start backend + frontend dev servers concurrently |
+| `make build` | Compile backend TS + Vite production bundle |
+| `make install` | `npm install` in both packages |
+| `make lint` | `tsc --noEmit` in both packages |
+| `make clean` | Remove `dist/` directories |
+| `make run` | Production build + start (wraps `run.sh`) |
+| `make service-install` | Install as systemd user service |
+| `make service-uninstall` | Stop, disable, and remove the service |
+| `make service-test` | Run service install test suite |
 
-frontend/src/
-  App.tsx                # HashRouter + layout shell
-  components/
-    StatsStrip.tsx       # Stat chips + settings icon
-    StatCard.tsx         # Single coloured stat chip
-    InfoCard.tsx         # Labelled info tile (account view)
-    SessionList.tsx      # Session rows (resume / delete / active badge)
-    SessionHeader.tsx    # Workdir + model + New Session button
-    UsageChart.tsx       # recharts AreaChart
-    MessageList.tsx      # Chat message history
-    AssistantMessage.tsx # Markdown + syntax-highlighted response
-    UserMessage.tsx      # User chat bubble
-    TerminalDrawer.tsx   # xterm.js drawer (CSS-toggled, never unmounted)
-    NewSessionModal.tsx  # Directory picker for new sessions
-    ChatInput.tsx        # Textarea (Enter = send, Shift+Enter = newline)
-  views/
-    DashboardView.tsx    # StatsStrip → collapsible chart → session area
-    SettingsView.tsx     # API key config
-  hooks/
-    useWebSocket.ts      # WS with exponential-backoff reconnect
-    useDashboard.ts      # Parallel fetch account + usage + sessions, 60 s refresh
-    useAccount.ts        # Fetch account info + auth status
-    useUsage.ts          # Fetch token usage + billing data
-    useResizableHeight.ts # Drag-to-resize height for the terminal drawer
-  context/
-    SessionContext.tsx   # Active session state + dispatch
+## Contributing
 
-scripts/
-  install-service.sh                      # systemd user service installer
-  uninstall-service.sh                    # systemd user service remover
-  claude-code-dashboard.service.template  # unit file template
-  test-service-install.sh                 # installer test suite
-```
+Bug reports and pull requests are welcome. Please open an issue first for significant changes so the approach can be discussed before implementation. Run `make lint` before submitting a PR — the CI pipeline will reject builds with type errors.
+
+## License
+
+[MIT](LICENSE)
