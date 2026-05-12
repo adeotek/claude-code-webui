@@ -1,6 +1,6 @@
 services:
   dashboard:
-    image: ghcr.io/adeotek/claude-code-dashboard:latest
+    image: ghcr.io/adeotek/claude-code-webui:latest
     build:
       context: .
     ports:

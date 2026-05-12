@@ -42,7 +42,7 @@ Dashboard available at **http://localhost:8080**.
 To build the image locally instead of pulling:
 
 ```bash
-docker build -t claude-code-dashboard .
+docker build -t claude-code-webui .
 docker-compose up
 ```
 
@@ -110,7 +110,7 @@ backend/src/
   routes/
     account.ts           # GET /api/account
     usage.ts             # GET /api/usage
-    sessions.ts          # GET/POST /api/sessions, POST /:id/stop, PATCH /:id
+    sessions.ts          # GET /api/directories, GET/POST /api/sessions, POST /:id/stop, PATCH /:id, GET /:id/messages, DELETE /:id
     settings.ts          # GET/POST /api/settings
   ws/
     session.ts           # WebSocket handler — headless claude subprocess
@@ -127,11 +127,14 @@ frontend/src/
   App.tsx                # HashRouter + layout shell
   components/
     StatsStrip.tsx       # Stat chips + settings icon
+    StatCard.tsx         # Single coloured stat chip
+    InfoCard.tsx         # Labelled info tile (account view)
     SessionList.tsx      # Session rows (resume / delete / active badge)
     SessionHeader.tsx    # Workdir + model + New Session button
     UsageChart.tsx       # recharts AreaChart
     MessageList.tsx      # Chat message history
     AssistantMessage.tsx # Markdown + syntax-highlighted response
+    UserMessage.tsx      # User chat bubble
     TerminalDrawer.tsx   # xterm.js drawer (CSS-toggled, never unmounted)
     NewSessionModal.tsx  # Directory picker for new sessions
     ChatInput.tsx        # Textarea (Enter = send, Shift+Enter = newline)
@@ -141,6 +144,9 @@ frontend/src/
   hooks/
     useWebSocket.ts      # WS with exponential-backoff reconnect
     useDashboard.ts      # Parallel fetch account + usage + sessions, 60 s refresh
+    useAccount.ts        # Fetch account info + auth status
+    useUsage.ts          # Fetch token usage + billing data
+    useResizableHeight.ts # Drag-to-resize height for the terminal drawer
   context/
     SessionContext.tsx   # Active session state + dispatch
 

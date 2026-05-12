@@ -1,5 +1,5 @@
 {
-  "name": "claude-code-dashboard-frontend",
+  "name": "claude-code-webui-frontend",
   "version": "0.1.0",
   "private": true,
   "type": "module",
