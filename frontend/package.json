@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "tsc --noEmit",
+    "lint": "tsc --noEmit --project tsconfig.app.json",
     "preview": "vite preview"
   },
   "dependencies": {

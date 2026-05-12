@@ -52,7 +52,7 @@ export default function DashboardView() {
 
 
   function handleSessionStart(sessionId: string, workdir: string, name: string | null) {
-    dispatch({ type: 'SESSION_CREATED', sessionId, workdir, ...(name ? { name } : {}) })
+    dispatch({ type: 'SESSION_CREATED', sessionId, workdir, mode: 'chat', ...(name ? { name } : {}) })
     if (account?.model) dispatch({ type: 'MODEL_SET', model: account.model })
     setShowModal(false)
     refresh()
@@ -95,7 +95,7 @@ export default function DashboardView() {
   }
 
   function handleResume(session: Session) {
-    dispatch({ type: 'RESUME_SESSION', id: session.id, workdir: session.workdir, ...(session.name ? { name: session.name } : {}) })
+    dispatch({ type: 'RESUME_SESSION', id: session.id, workdir: session.workdir, mode: 'chat', ...(session.name ? { name: session.name } : {}) })
     if (account?.model) dispatch({ type: 'MODEL_SET', model: account.model })
   }
 
