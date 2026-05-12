@@ -24,6 +24,12 @@ function formatTimeUntil(isoString: string | null): string | null {
   return rh > 0 ? `${d}d ${rh}h` : `${d}d`
 }
 
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}k`
+  return String(n)
+}
+
 function pctColor(pct: number): string {
   if (pct >= 80) return 'text-status-red'
   if (pct >= 50) return 'text-yellow-400'
@@ -135,6 +141,13 @@ export default function StatsStrip({ account, usage, activeSessions, loading }: 
                 ? pctColor(Math.round((rl.extraUsedCents / rl.extraLimitCents) * 100))
                 : 'text-text-primary'
             }
+          />
+        )}
+
+        {!isInitialLoad && usage?.totals && (
+          <Chip
+            label="tokens"
+            value={formatTokens(usage.totals.inputTokens + usage.totals.outputTokens)}
           />
         )}
 

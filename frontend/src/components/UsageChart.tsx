@@ -19,7 +19,7 @@ function formatK(n: number) {
 
 export default function UsageChart({ days }: UsageChartProps) {
   const data = days.map((d) => ({
-    date: d.date.slice(5), // MM-DD
+    date: d.date,
     tokens: d.inputTokens + d.outputTokens,
     cost: d.costUsd,
   }))

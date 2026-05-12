@@ -8,11 +8,13 @@ const PROJECTS_DIR = path.join(CLAUDE_HOME, 'projects')
 interface LogEntry {
   type: string
   costUSD?: number
-  usage?: {
-    input_tokens?: number
-    output_tokens?: number
-    cache_creation_input_tokens?: number
-    cache_read_input_tokens?: number
+  message?: {
+    usage?: {
+      input_tokens?: number
+      output_tokens?: number
+      cache_creation_input_tokens?: number
+      cache_read_input_tokens?: number
+    }
   }
   timestamp?: string
 }
@@ -52,13 +54,14 @@ export function parseLocalUsage(month: string): DayUsage[] {
       let entry: LogEntry
       try { entry = JSON.parse(line) as LogEntry } catch { continue }
 
-      if (entry.type !== 'assistant' || !entry.usage) continue
+      const usage = entry.message?.usage
+      if (entry.type !== 'assistant' || !usage) continue
       const date = parseDate(entry.timestamp)
       if (!date || !date.startsWith(month)) continue
 
       const cur = byDate.get(date) ?? { date, inputTokens: 0, outputTokens: 0, costUsd: 0 }
-      cur.inputTokens += (entry.usage.input_tokens ?? 0) + (entry.usage.cache_read_input_tokens ?? 0)
-      cur.outputTokens += entry.usage.output_tokens ?? 0
+      cur.inputTokens += (usage.input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0)
+      cur.outputTokens += usage.output_tokens ?? 0
       cur.costUsd += entry.costUSD ?? 0
       byDate.set(date, cur)
     }

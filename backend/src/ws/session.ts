@@ -26,7 +26,7 @@ interface StreamEvent {
     id?: string
     content?: ContentBlock[]
     stop_reason?: string | null
-    usage?: { input_tokens?: number; output_tokens?: number }
+    usage?: { input_tokens?: number; output_tokens?: number; cache_read_input_tokens?: number; cache_creation_input_tokens?: number }
   }
 }
 
@@ -175,7 +175,7 @@ class ActiveSession {
     let lastEmittedLen = 0
     let thinkingEmitted = false
     const emittedToolIds = new Set<string>()
-    let lastUsage: { input_tokens?: number; output_tokens?: number } | null = null
+    let lastUsage: { input_tokens?: number; output_tokens?: number; cache_read_input_tokens?: number; cache_creation_input_tokens?: number } | null = null
 
     rl.on('line', (line) => {
       this.resetIdle()
@@ -237,7 +237,9 @@ class ActiveSession {
             this.id,
           )
         }
-        const inputTokens = lastUsage?.input_tokens ?? 0
+        const inputTokens = (lastUsage?.input_tokens ?? 0)
+          + (lastUsage?.cache_read_input_tokens ?? 0)
+          + (lastUsage?.cache_creation_input_tokens ?? 0)
         const outputTokens = lastUsage?.output_tokens ?? 0
         const elapsed = this.runStartedAt != null ? Date.now() - this.runStartedAt : 0
         this.runStartedAt = null
