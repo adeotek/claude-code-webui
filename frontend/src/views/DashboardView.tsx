@@ -13,6 +13,7 @@ import TerminalDrawer, { type TerminalDrawerHandle } from '../components/Termina
 import NewSessionModal from '../components/NewSessionModal'
 import UsageChart from '../components/UsageChart'
 import PermissionDialog from '../components/PermissionDialog'
+import TerminalSession from '../components/TerminalSession'
 
 export default function DashboardView() {
   const { state, dispatch } = useSession()
@@ -20,7 +21,7 @@ export default function DashboardView() {
   const [showModal, setShowModal] = useState(false)
   const [chartOpen, setChartOpen] = useState(false)
 
-  const { account, usage, sessions, activeSessions, loading, refresh } = useDashboard()
+  const { account, usage, sessions, activeSessions, defaultSessionMode, loading, refresh } = useDashboard()
   // Local sessions state for optimistic deletion
   const [localSessions, setLocalSessions] = useState<Session[] | null>(null)
   const displaySessions = localSessions ?? sessions
@@ -45,14 +46,15 @@ export default function DashboardView() {
 
   // Register PTY resize callback once the terminal mounts
   useEffect(() => {
+    if (state.mode === 'terminal') return
     terminalRef.current?.sendResize((cols, rows) => {
       send({ type: 'resize', cols, rows })
     })
-  }, [send])
+  }, [send, state.mode])
 
 
   function handleSessionStart(sessionId: string, workdir: string, name: string | null) {
-    dispatch({ type: 'SESSION_CREATED', sessionId, workdir, mode: 'chat', ...(name ? { name } : {}) })
+    dispatch({ type: 'SESSION_CREATED', sessionId, workdir, mode: defaultSessionMode, ...(name ? { name } : {}) })
     if (account?.model) dispatch({ type: 'MODEL_SET', model: account.model })
     setShowModal(false)
     refresh()
@@ -95,7 +97,7 @@ export default function DashboardView() {
   }
 
   function handleResume(session: Session) {
-    dispatch({ type: 'RESUME_SESSION', id: session.id, workdir: session.workdir, mode: 'chat', ...(session.name ? { name: session.name } : {}) })
+    dispatch({ type: 'RESUME_SESSION', id: session.id, workdir: session.workdir, mode: session.mode ?? 'chat', ...(session.name ? { name: session.name } : {}) })
     if (account?.model) dispatch({ type: 'MODEL_SET', model: account.model })
   }
 
@@ -176,12 +178,18 @@ export default function DashboardView() {
             totalTokens={state.totalTokens}
             sessionStartedAt={activeSession?.started_at ?? null}
           />
-          <MessageList messages={state.messages} />
-          <TerminalDrawer ref={terminalRef} wsState={state.wsState} onInput={handleTerminalInput} />
-          <ChatInput
-            onSend={handleSend}
-            disabled={state.wsState === 'disconnected' || state.wsState === 'error'}
-          />
+          {state.mode === 'terminal' ? (
+            <TerminalSession />
+          ) : (
+            <>
+              <MessageList messages={state.messages} />
+              <TerminalDrawer ref={terminalRef} wsState={state.wsState} onInput={handleTerminalInput} />
+              <ChatInput
+                onSend={handleSend}
+                disabled={state.wsState === 'disconnected' || state.wsState === 'error'}
+              />
+            </>
+          )}
         </div>
       ) : showModal ? (
         <NewSessionModal onStart={handleSessionStart} />
