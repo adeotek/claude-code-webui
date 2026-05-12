@@ -14,14 +14,20 @@ function getBypassPermissions(): boolean {
   return row ? row.value === 'true' : true
 }
 
+type TerminalServerMessage =
+  | { type: 'output'; data: string }
+  | { type: 'status'; state: string }
+
 class ActiveTerminalSession {
   private ptyProc: pty.IPty | null = null
   private sockets = new Set<WebSocket>()
   private idleTimer: NodeJS.Timeout | null = null
+  private spawnError: string | null = null
 
   constructor(
     readonly id: string,
     private readonly workdir: string,
+    private readonly onCleanup: (id: string) => void,
   ) {
     this.spawnPty()
     this.resetIdle()
@@ -46,8 +52,7 @@ class ActiveTerminalSession {
         env: { ...process.env } as Record<string, string>,
       })
     } catch (err) {
-      this.broadcast({ type: 'output', data: `\r\nError starting terminal: ${(err as Error).message}\r\n` })
-      this.broadcast({ type: 'status', state: 'disconnected' })
+      this.spawnError = (err as Error).message
       return
     }
 
@@ -61,11 +66,20 @@ class ActiveTerminalSession {
       db.prepare('UPDATE sessions SET ended_at = ? WHERE id = ?').run(Date.now(), this.id)
       this.broadcast({ type: 'status', state: 'disconnected' })
       if (this.idleTimer) clearTimeout(this.idleTimer)
+      this.onCleanup(this.id)
     })
   }
 
   attach(ws: WebSocket) {
     this.sockets.add(ws)
+    this.resetIdle()
+    if (this.spawnError) {
+      ws.send(JSON.stringify({ type: 'output', data: `\r\nError starting terminal: ${this.spawnError}\r\n` }))
+      ws.send(JSON.stringify({ type: 'status', state: 'disconnected' }))
+      ws.close()
+      this.sockets.delete(ws)
+      return
+    }
     ws.send(JSON.stringify({ type: 'status', state: 'connected' }))
     ws.on('close', () => this.sockets.delete(ws))
   }
@@ -89,7 +103,7 @@ class ActiveTerminalSession {
     this.broadcast({ type: 'status', state: 'disconnected' })
   }
 
-  private broadcast(msg: { type: string; data?: string; state?: string }) {
+  private broadcast(msg: TerminalServerMessage) {
     const payload = JSON.stringify(msg)
     for (const ws of this.sockets) {
       if (ws.readyState === ws.OPEN) ws.send(payload)
@@ -107,7 +121,9 @@ class TerminalManager {
 
   getOrCreate(id: string, workdir: string): ActiveTerminalSession {
     if (!this.sessions.has(id)) {
-      this.sessions.set(id, new ActiveTerminalSession(id, workdir))
+      this.sessions.set(id, new ActiveTerminalSession(id, workdir, (cleanupId) => {
+        this.sessions.delete(cleanupId)
+      }))
     }
     return this.sessions.get(id)!
   }
