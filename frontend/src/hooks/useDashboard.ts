@@ -11,6 +11,7 @@ export interface Session {
   ended_at: number | null
   is_active: boolean
   message_count: number
+  mode: 'chat' | 'terminal'
 }
 
 export interface DashboardData {
@@ -18,6 +19,7 @@ export interface DashboardData {
   usage: UsageData | null
   sessions: Session[]
   activeSessions: number
+  defaultSessionMode: 'chat' | 'terminal'
   loading: boolean
   error: string | null
 }
@@ -26,6 +28,7 @@ export function useDashboard(month?: string): DashboardData & { refresh: () => v
   const [account, setAccount] = useState<AccountInfo | null>(null)
   const [usage, setUsage] = useState<UsageData | null>(null)
   const [sessions, setSessions] = useState<Session[]>([])
+  const [defaultSessionMode, setDefaultSessionMode] = useState<'chat' | 'terminal'>('chat')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -39,11 +42,13 @@ export function useDashboard(month?: string): DashboardData & { refresh: () => v
       fetch('/api/account').then((r) => r.json() as Promise<AccountInfo>),
       fetch(`/api/usage?month=${target}`).then((r) => r.json() as Promise<UsageData>),
       fetch('/api/sessions').then((r) => r.json() as Promise<Session[]>),
+      fetch('/api/settings').then((r) => r.json() as Promise<Record<string, string>>),
     ])
-      .then(([acc, usg, sess]) => {
+      .then(([acc, usg, sess, settings]) => {
         setAccount(acc)
         setUsage(usg)
         setSessions(Array.isArray(sess) ? sess : [])
+        setDefaultSessionMode(settings.session_mode === 'terminal' ? 'terminal' : 'chat')
         setLoading(false)
       })
       .catch((e: Error) => {
@@ -60,5 +65,5 @@ export function useDashboard(month?: string): DashboardData & { refresh: () => v
 
   const activeSessions = sessions.filter((s) => s.is_active).length
 
-  return { account, usage, sessions, activeSessions, loading, error, refresh: fetchAll }
+  return { account, usage, sessions, activeSessions, defaultSessionMode, loading, error, refresh: fetchAll }
 }
