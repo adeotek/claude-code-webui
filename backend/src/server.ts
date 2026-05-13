@@ -20,6 +20,7 @@ const fastify = Fastify({ logger: true })
 async function start() {
   const devOrigin = process.env.FRONTEND_ORIGIN
   await fastify.register(cors, {
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
     origin: (origin, cb) => {
       if (!origin) return cb(null, true)                       // same-origin / curl / no-CORS
       try {

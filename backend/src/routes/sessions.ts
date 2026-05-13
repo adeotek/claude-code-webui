@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify'
-import { v4 as uuidv4 } from 'uuid'
+import { randomUUID } from 'crypto'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
@@ -54,7 +54,7 @@ export async function sessionRoutes(fastify: FastifyInstance) {
       .get() as { value: string } | undefined
     const mode = modeRow?.value === 'terminal' ? 'terminal' : 'chat'
 
-    const id = uuidv4()
+    const id = randomUUID()
     db.prepare(
       'INSERT INTO sessions (id, workdir, name, mode, started_at) VALUES (?, ?, ?, ?, ?)',
     ).run(id, workdir, name?.trim() || null, mode, Date.now())

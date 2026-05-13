@@ -52,7 +52,7 @@ export default function UsageChart({ days }: UsageChartProps) {
           contentStyle={{ background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: 4, fontSize: 11 }}
           labelStyle={{ color: '#888' }}
           itemStyle={{ color: '#d97706' }}
-          formatter={(v: number) => [formatK(v), 'tokens']}
+          formatter={(v) => [formatK(Number(v ?? 0)), 'tokens']}
         />
         <Area
           type="monotone"

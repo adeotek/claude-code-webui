@@ -1,5 +1,6 @@
 import { Plus, Play, Square, Trash2 } from 'lucide-react'
 import type { Session } from '../hooks/useDashboard'
+import { formatRelativeTime, lastSegment } from '../utils/format'
 
 interface SessionListProps {
   sessions: Session[]
@@ -9,27 +10,6 @@ interface SessionListProps {
   onNewSession: () => void
 }
 
-function formatRelativeTime(ts: number): string {
-  const diffMs = Date.now() - ts
-  const diffSec = Math.floor(diffMs / 1000)
-  if (diffSec < 60) return 'just now'
-  const diffMin = Math.floor(diffSec / 60)
-  if (diffMin < 60) return `${diffMin}m ago`
-  const diffH = Math.floor(diffMin / 60)
-  if (diffH < 24) return `${diffH}h ago`
-  const diffD = Math.floor(diffH / 24)
-  if (diffD < 30) return `${diffD} day${diffD === 1 ? '' : 's'} ago`
-  const diffW = Math.floor(diffD / 7)
-  if (diffD < 60) return `${diffW} week${diffW === 1 ? '' : 's'} ago`
-  const diffMo = Math.floor(diffD / 30)
-  return `${diffMo} month${diffMo === 1 ? '' : 's'} ago`
-}
-
-function lastSegment(path: string): string {
-  const trimmed = path.replace(/\/$/, '')
-  const idx = trimmed.lastIndexOf('/')
-  return idx >= 0 ? trimmed.slice(idx + 1) : trimmed
-}
 
 async function deleteSession(sessionId: string): Promise<void> {
   await fetch(`/api/sessions/${sessionId}`, { method: 'DELETE' })

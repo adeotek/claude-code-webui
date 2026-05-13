@@ -40,7 +40,7 @@ type Action =
   | { type: 'PERMISSION_REQUEST'; permissions: PermissionRequest[] }
   | { type: 'PERMISSION_CLEARED' }
 
-const initial: SessionState = {
+export const initial: SessionState = {
   sessionId: null,
   workdir: null,
   name: null,
@@ -54,7 +54,7 @@ const initial: SessionState = {
   pendingPermissions: null,
 }
 
-function reducer(state: SessionState, action: Action): SessionState {
+export function reducer(state: SessionState, action: Action): SessionState {
   switch (action.type) {
     case 'SESSION_CREATED':
       return { ...state, sessionId: action.sessionId, workdir: action.workdir, name: action.name ?? null, mode: action.mode, messages: [], wsState: 'connecting', workingTimeMs: 0, runningStartedAt: null, pendingPermissions: null }
