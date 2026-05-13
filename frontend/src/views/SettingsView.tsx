@@ -2,10 +2,7 @@ import { useState, useEffect } from 'react'
 import { ArrowLeft, Save } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
-const API_KEY = 'dashboard_anthropic_api_key'
-
 export default function SettingsView() {
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem(API_KEY) ?? '')
   const [bypassPermissions, setBypassPermissions] = useState(true)
   const [sessionMode, setSessionMode] = useState<'chat' | 'terminal'>('chat')
   const [saved, setSaved] = useState(false)
@@ -23,9 +20,6 @@ export default function SettingsView() {
   }, [])
 
   async function handleSave() {
-    if (apiKey) localStorage.setItem(API_KEY, apiKey)
-    else localStorage.removeItem(API_KEY)
-
     await fetch('/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -51,21 +45,26 @@ export default function SettingsView() {
 
       <h2 className="text-text-secondary text-xs uppercase tracking-widest">Settings</h2>
 
-      {/* API key */}
+      {/* Session mode toggle */}
       <div className="space-y-2">
         <label className="text-text-secondary text-xs uppercase tracking-widest block">
-          Anthropic API Key
+          Session Mode
         </label>
         <p className="text-text-muted text-xs">
-          Used to fetch billing usage totals in the Usage view. Stored in localStorage only.
+          Controls the interface for new sessions. <strong className="text-text-secondary">Chat</strong> uses the structured message view. <strong className="text-text-secondary">Terminal</strong> opens a full interactive terminal connected directly to Claude Code.
         </p>
-        <input
-          type="password"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          placeholder="sk-ant-…"
-          className="w-full bg-bg-panel border border-border rounded-md px-3 py-2 text-sm text-text-primary placeholder-text-dim focus:outline-none focus:border-accent"
-        />
+        <button
+          onClick={() => setSessionMode((m) => (m === 'chat' ? 'terminal' : 'chat'))}
+          disabled={!settingsLoaded}
+          className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded border transition-colors disabled:opacity-40 ${
+            sessionMode === 'terminal'
+              ? 'border-status-green text-status-green bg-status-green/10'
+              : 'border-border-subtle text-text-muted bg-bg-elevated'
+          }`}
+        >
+          <span className={`w-2 h-2 rounded-full ${sessionMode === 'terminal' ? 'bg-status-green' : 'bg-text-dim'}`} />
+          {sessionMode === 'terminal' ? 'Session mode: terminal' : 'Session mode: chat'}
+        </button>
       </div>
 
       {/* Bypass permissions toggle */}
@@ -87,28 +86,6 @@ export default function SettingsView() {
         >
           <span className={`w-2 h-2 rounded-full ${bypassPermissions ? 'bg-status-green' : 'bg-text-dim'}`} />
           {bypassPermissions ? 'Bypass permissions: on' : 'Bypass permissions: off'}
-        </button>
-      </div>
-
-      {/* Session mode toggle */}
-      <div className="space-y-2">
-        <label className="text-text-secondary text-xs uppercase tracking-widest block">
-          Session Mode
-        </label>
-        <p className="text-text-muted text-xs">
-          Controls the interface for new sessions. <strong className="text-text-secondary">Chat</strong> uses the structured message view. <strong className="text-text-secondary">Terminal</strong> opens a full interactive terminal connected directly to Claude Code.
-        </p>
-        <button
-          onClick={() => setSessionMode((m) => (m === 'chat' ? 'terminal' : 'chat'))}
-          disabled={!settingsLoaded}
-          className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded border transition-colors disabled:opacity-40 ${
-            sessionMode === 'terminal'
-              ? 'border-status-green text-status-green bg-status-green/10'
-              : 'border-border-subtle text-text-muted bg-bg-elevated'
-          }`}
-        >
-          <span className={`w-2 h-2 rounded-full ${sessionMode === 'terminal' ? 'bg-status-green' : 'bg-text-dim'}`} />
-          {sessionMode === 'terminal' ? 'Session mode: terminal' : 'Session mode: chat'}
         </button>
       </div>
 
