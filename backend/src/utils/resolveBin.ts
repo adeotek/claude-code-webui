@@ -13,8 +13,8 @@ export function resolveBin(bin: string): string {
     .map((e) => e.trim())
     .filter(Boolean)
 
-  if (path.isAbsolute(bin)) {
-    if (path.extname(bin) && fs.existsSync(bin)) return bin
+  if (path.win32.isAbsolute(bin)) {
+    if (path.win32.extname(bin) && fs.existsSync(bin)) return bin
     for (const ext of exts) {
       const candidate = bin + ext
       if (fs.existsSync(candidate)) return candidate
@@ -23,14 +23,14 @@ export function resolveBin(bin: string): string {
   }
 
   const dirs = (process.env.PATH ?? '').split(';').filter(Boolean)
-  const hasExt = !!path.extname(bin)
+  const hasExt = !!path.win32.extname(bin)
   for (const dir of dirs) {
     if (hasExt) {
-      const candidate = path.join(dir, bin)
+      const candidate = path.win32.join(dir, bin)
       if (fs.existsSync(candidate)) return candidate
     } else {
       for (const ext of exts) {
-        const candidate = path.join(dir, bin + ext)
+        const candidate = path.win32.join(dir, bin + ext)
         if (fs.existsSync(candidate)) return candidate
       }
     }

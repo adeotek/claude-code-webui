@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Plus, List, Square, Pencil } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useSession } from '../context/SessionContext'
 import { formatModelName, formatTokens, formatDuration } from '../utils/format'
 
@@ -164,13 +165,14 @@ export default function SessionHeader({
       </div>
 
       <div className="flex items-center gap-2 ml-auto">
-        <button
-          onClick={onNewSession}
+        <Link
+          to="/new"
+          onClick={(e) => { e.preventDefault(); onNewSession() }}
           className="flex items-center gap-1.5 text-text-muted hover:text-accent text-xs bg-bg-elevated border border-border-subtle hover:border-accent px-2 py-1 rounded transition-colors"
         >
           <Plus size={11} />
           New session
-        </button>
+        </Link>
         <button
           onClick={onStopSession}
           className="flex items-center gap-1.5 text-text-muted hover:text-status-red text-xs bg-bg-elevated border border-border-subtle hover:border-status-red px-2 py-1 rounded transition-colors"

@@ -1,10 +1,10 @@
 import { Plus, Play, Square, Trash2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import type { Session } from '../hooks/useDashboard'
 import { formatRelativeTime, lastSegment } from '../utils/format'
 
 interface SessionListProps {
   sessions: Session[]
-  onResume: (session: Session) => void
   onStop: (sessionId: string) => void
   onDelete: (sessionId: string) => void
   onNewSession: () => void
@@ -17,7 +17,6 @@ async function deleteSession(sessionId: string): Promise<void> {
 
 export default function SessionList({
   sessions,
-  onResume,
   onStop,
   onDelete,
   onNewSession,
@@ -37,13 +36,14 @@ export default function SessionList({
       {/* Header */}
       <div className="px-4 py-2.5 border-b border-border-subtle bg-bg-surface flex items-center justify-between flex-shrink-0">
         <span className="text-text-muted text-xs uppercase tracking-widest">Sessions</span>
-        <button
-          onClick={onNewSession}
+        <Link
+          to="/new"
+          onClick={(e) => { e.preventDefault(); onNewSession() }}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-accent text-black hover:bg-accent-hover rounded transition-colors"
         >
           <Plus size={11} />
           New Session
-        </button>
+        </Link>
       </div>
 
       {/* Session rows */}
@@ -51,13 +51,14 @@ export default function SessionList({
         {sessions.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 p-6">
             <p className="text-text-muted text-sm">No sessions yet</p>
-            <button
-              onClick={onNewSession}
+            <Link
+              to="/new"
+              onClick={(e) => { e.preventDefault(); onNewSession() }}
               className="flex items-center gap-2 px-4 py-2 text-sm bg-accent text-black hover:bg-accent-hover rounded transition-colors"
             >
               <Plus size={14} />
               Start New Session
-            </button>
+            </Link>
           </div>
         ) : (
           sessions.map((session) => (
@@ -92,13 +93,14 @@ export default function SessionList({
 
               {/* Right: actions */}
               <div className="flex items-center gap-1.5 flex-shrink-0">
-                <button
-                  onClick={() => onResume(session)}
+                <Link
+                  to={`/session/${session.id}`}
+                  state={{ session }}
                   title={session.is_active ? 'Reconnect' : 'Resume'}
                   className="flex items-center justify-center px-2.5 py-1.5 text-xs border border-accent text-accent hover:bg-accent hover:text-black rounded transition-colors"
                 >
                   <Play size={11} />
-                </button>
+                </Link>
                 <button
                   onClick={() => onStop(session.id)}
                   disabled={!session.is_active}
