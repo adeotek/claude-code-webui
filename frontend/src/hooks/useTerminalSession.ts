@@ -55,7 +55,7 @@ export function useTerminalSession(onOutput: (data: string) => void, onConnect?:
         if (attemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
           const delay = BASE_DELAY_MS * 2 ** attemptsRef.current
           attemptsRef.current++
-          setTimeout(connect, delay)
+          setTimeout(() => { if (!closed) connect() }, delay)
         } else {
           dispatch({ type: 'WS_STATE', timestamp: Date.now(), state: 'disconnected' })
           setTimeout(() => {
@@ -69,8 +69,14 @@ export function useTerminalSession(onOutput: (data: string) => void, onConnect?:
     return () => {
       closed = true
       attemptsRef.current = 0
-      wsRef.current?.close()
+      const ws = wsRef.current
       wsRef.current = null
+      if (ws) {
+        ws.onmessage = null
+        ws.onerror = null
+        ws.onclose = null
+        ws.close()
+      }
     }
   }, [state.sessionId, state.mode]) // eslint-disable-line react-hooks/exhaustive-deps
 

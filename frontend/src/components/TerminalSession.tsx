@@ -12,7 +12,16 @@ export default function TerminalSession() {
   const fitRef = useRef<FitAddon | null>(null)
   const lastSessionIdRef = useRef<string | null>(null)
 
+  // Output arriving while history is being replayed is buffered here and flushed
+  // after the replay write completes, preserving correct ordering.
+  const pendingOutputRef = useRef<string[]>([])
+  const replayingRef = useRef(false)
+
   const onOutput = useCallback((data: string) => {
+    if (replayingRef.current) {
+      pendingOutputRef.current.push(data)
+      return
+    }
     termRef.current?.write(data)
   }, [])
 
@@ -30,12 +39,28 @@ export default function TerminalSession() {
     })
   }, [])
 
-  // Replay scrollback from the backend on reconnect (covers page refresh).
-  // Clears first so history isn't duplicated on top of live content from CSS-toggle sessions.
+  // Replay scrollback from the backend on reconnect.
+  // write() is async (goes through xterm's write queue via setTimeout). reset() is
+  // synchronous — it resets parser state but does NOT flush or clear the pending write
+  // queue. Any onOutput writes already queued would therefore be processed BEFORE the
+  // history write, producing partial/garbled display.
+  // Fix: write('', callback) to drain the queue first, then reset + write history.
+  // Output that arrives from the new connection during this async wait is buffered and
+  // flushed after the history write completes.
   const onHistory = useCallback((data: string) => {
-    if (!termRef.current) return
-    termRef.current.clear()
-    termRef.current.write(data)
+    const term = termRef.current
+    if (!term) return
+    replayingRef.current = true
+    pendingOutputRef.current = []
+    term.write('', () => {
+      term.reset()
+      term.write(data, () => {
+        replayingRef.current = false
+        const pending = pendingOutputRef.current
+        pendingOutputRef.current = []
+        for (const chunk of pending) term.write(chunk)
+      })
+    })
   }, [])
 
   const { send } = useTerminalSession(onOutput, onConnect, onHistory)
@@ -69,12 +94,12 @@ export default function TerminalSession() {
     return () => term.dispose()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Clear xterm when switching to a different session so stale output isn't shown.
-  // Navigating to the sessions list and back to the SAME session skips the clear.
+  // Reset xterm when switching to a different session so stale VT state isn't carried over.
+  // Navigating to the sessions list and back to the SAME session skips the reset.
   useEffect(() => {
     if (!state.sessionId) return
     if (lastSessionIdRef.current !== null && lastSessionIdRef.current !== state.sessionId) {
-      termRef.current?.clear()
+      termRef.current?.reset()
     }
     lastSessionIdRef.current = state.sessionId
   }, [state.sessionId])
