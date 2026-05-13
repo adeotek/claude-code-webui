@@ -4,7 +4,7 @@ import { useSession } from '../context/SessionContext'
 const MAX_RECONNECT_ATTEMPTS = 5
 const BASE_DELAY_MS = 500
 
-export function useTerminalSession(onOutput: (data: string) => void) {
+export function useTerminalSession(onOutput: (data: string) => void, onConnect?: () => void) {
   const { state, dispatch } = useSession()
   const wsRef = useRef<WebSocket | null>(null)
   const attemptsRef = useRef(0)
@@ -22,6 +22,7 @@ export function useTerminalSession(onOutput: (data: string) => void) {
 
       ws.onopen = () => {
         attemptsRef.current = 0
+        onConnect?.()
       }
 
       ws.onmessage = (event) => {

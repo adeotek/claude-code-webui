@@ -13,7 +13,13 @@ export default function TerminalSession() {
     termRef.current?.write(data)
   }, [])
 
-  const { send } = useTerminalSession(onOutput)
+  // Called when WS opens: fit to browser dimensions, which triggers term.onResize → sends
+  // the resize message that spawns the PTY with the correct initial size.
+  const onConnect = useCallback(() => {
+    requestAnimationFrame(() => fitRef.current?.fit())
+  }, [])
+
+  const { send } = useTerminalSession(onOutput, onConnect)
 
   useEffect(() => {
     const term = new Terminal({

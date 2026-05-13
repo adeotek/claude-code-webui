@@ -23,17 +23,15 @@ class ActiveTerminalSession {
   private sockets = new Set<WebSocket>()
   private idleTimer: NodeJS.Timeout | null = null
   private spawnError: string | null = null
+  private spawned = false
 
   constructor(
     readonly id: string,
     private readonly workdir: string,
     private readonly onCleanup: (id: string) => void,
-  ) {
-    this.spawnPty()
-    this.resetIdle()
-  }
+  ) {}
 
-  private spawnPty() {
+  private spawnPty(cols: number, rows: number) {
     const claudeBin = process.env.CLAUDE_BIN ?? 'claude'
     const bypassPermissions = getBypassPermissions()
     const args: string[] = []
@@ -46,15 +44,24 @@ class ActiveTerminalSession {
     try {
       this.ptyProc = pty.spawn(claudeBin, args, {
         name: 'xterm-256color',
-        cols: 220,
-        rows: 50,
+        cols,
+        rows,
         cwd: resolvedCwd,
         env: { ...process.env } as Record<string, string>,
       })
     } catch (err) {
       this.spawnError = (err as Error).message
+      this.broadcast({ type: 'output', data: `\r\nError starting terminal: ${this.spawnError}\r\n` })
+      this.broadcast({ type: 'status', state: 'disconnected' })
+      for (const ws of this.sockets) ws.close()
+      this.sockets.clear()
+      this.onCleanup(this.id)
       return
     }
+
+    this.spawned = true
+    this.resetIdle()
+    this.broadcast({ type: 'status', state: 'connected' })
 
     this.ptyProc.onData((data) => {
       this.resetIdle()
@@ -72,17 +79,12 @@ class ActiveTerminalSession {
 
   attach(ws: WebSocket) {
     this.sockets.add(ws)
-    this.resetIdle()
-    if (this.spawnError) {
-      ws.send(JSON.stringify({ type: 'output', data: `\r\nError starting terminal: ${this.spawnError}\r\n` }))
-      ws.send(JSON.stringify({ type: 'status', state: 'disconnected' }))
-      ws.close()
-      this.sockets.delete(ws)
-      this.onCleanup(this.id)
-      return
-    }
-    ws.send(JSON.stringify({ type: 'status', state: 'connected' }))
     ws.on('close', () => this.sockets.delete(ws))
+    // If PTY already running (reconnect), confirm immediately.
+    // If not yet spawned, wait for the first resize message to spawn with correct dimensions.
+    if (this.spawned) {
+      ws.send(JSON.stringify({ type: 'status', state: 'connected' }))
+    }
   }
 
   writeInput(data: string) {
@@ -91,7 +93,11 @@ class ActiveTerminalSession {
   }
 
   resize(cols: number, rows: number) {
-    this.ptyProc?.resize(cols, rows)
+    if (!this.spawned) {
+      this.spawnPty(cols, rows)
+    } else {
+      this.ptyProc?.resize(cols, rows)
+    }
   }
 
   kill() {
