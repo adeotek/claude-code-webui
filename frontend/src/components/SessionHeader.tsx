@@ -76,14 +76,16 @@ export default function SessionHeader({
   const [renameSaving, setRenameSaving] = useState(false)
 
   useEffect(() => {
-    if (state.wsState !== 'running') return
+    const active = state.wsState === 'running' || (state.mode === 'terminal' && state.wsState === 'idle')
+    if (!active) return
     const timer = setInterval(() => setTick((t) => t + 1), 1000)
     return () => clearInterval(timer)
-  }, [state.wsState])
+  }, [state.wsState, state.mode])
 
   const workingMs =
-    state.workingTimeMs +
-    (state.runningStartedAt != null ? Date.now() - state.runningStartedAt : 0)
+    state.mode === 'terminal' && sessionStartedAt != null
+      ? Date.now() - sessionStartedAt
+      : state.workingTimeMs + (state.runningStartedAt != null ? Date.now() - state.runningStartedAt : 0)
 
   function startRename() {
     setNameInput(sessionName ?? '')
@@ -184,7 +186,9 @@ export default function SessionHeader({
         {workingMs > 0 && (
           <StatChip label="dur" value={formatDuration(workingMs)} valueClass="text-status-green" />
         )}
-        <StatChip label="tokens" value={formatTokens(totalTokens)} />
+        {state.mode !== 'terminal' && (
+          <StatChip label="tokens" value={formatTokens(totalTokens)} />
+        )}
       </div>
 
       <div className="flex items-center gap-2 ml-auto">
