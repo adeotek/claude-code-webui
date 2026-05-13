@@ -4,6 +4,7 @@ import * as path from 'path'
 import type { WebSocket } from 'ws'
 import type { FastifyInstance } from 'fastify'
 import { db } from '../db/schema'
+import { resolveBin } from '../utils/resolveBin'
 
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000
 
@@ -128,7 +129,7 @@ class ActiveSession {
       ).run(this.id, 'user', text, Date.now())
     }
 
-    const claudeBin = process.env.CLAUDE_BIN ?? 'claude'
+    const claudeBin = resolveBin(process.env.CLAUDE_BIN?.trim() || 'claude')
     const bypassPermissions = getBypassPermissions()
 
     // --print + -p: non-interactive print mode with the prompt passed as a CLI

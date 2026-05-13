@@ -1,16 +1,19 @@
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import DashboardView from './views/DashboardView'
+import SessionRoute from './views/SessionRoute'
 import SettingsView from './views/SettingsView'
 import { SessionProvider } from './context/SessionContext'
 
 export default function App() {
   return (
-    <HashRouter>
+    <BrowserRouter>
       <SessionProvider>
         <div className="flex h-screen bg-bg-base text-text-primary overflow-hidden font-mono">
           <main className="flex-1 overflow-hidden flex flex-col">
             <Routes>
               <Route path="/" element={<DashboardView />} />
+              <Route path="/session/:sessionId" element={<SessionRoute />} />
+              <Route path="/new" element={<Navigate to="/" state={{ openModal: true }} replace />} />
               <Route path="/settings" element={<SettingsView />} />
               <Route path="/account" element={<Navigate to="/" replace />} />
               <Route path="/usage" element={<Navigate to="/" replace />} />
@@ -19,6 +22,6 @@ export default function App() {
           </main>
         </div>
       </SessionProvider>
-    </HashRouter>
+    </BrowserRouter>
   )
 }

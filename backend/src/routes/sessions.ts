@@ -27,6 +27,23 @@ export async function sessionRoutes(fastify: FastifyInstance) {
     }
   })
 
+  fastify.get<{ Params: { id: string } }>('/api/sessions/:id', async (req, reply) => {
+    const { id } = req.params
+    const row = db
+      .prepare(
+        `SELECT s.*,
+          CASE WHEN s.ended_at IS NULL THEN 1 ELSE 0 END as is_active,
+          COUNT(m.id) as message_count
+        FROM sessions s
+        LEFT JOIN messages m ON m.session_id = s.id
+        WHERE s.id = ?
+        GROUP BY s.id`,
+      )
+      .get(id)
+    if (!row) return reply.status(404).send({ error: 'Session not found' })
+    return reply.send(row)
+  })
+
   fastify.get('/api/sessions', async (_req, reply) => {
     const rows = db
       .prepare(

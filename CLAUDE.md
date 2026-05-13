@@ -46,7 +46,6 @@ cp .env.example backend/.env
 | `CLAUDE_BIN` | `claude` | Path to the `claude` binary |
 | `PORT` | `9998` | Backend listen port |
 | `HOST` | `0.0.0.0` | Backend listen address |
-| `FRONTEND_ORIGIN` | `http://localhost:9999` | CORS allowed origin (dev only) |
 
 ## Dev ports
 
