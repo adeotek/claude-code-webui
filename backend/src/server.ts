@@ -18,13 +18,16 @@ import { settingsRoutes } from './routes/settings'
 const fastify = Fastify({ logger: true })
 
 async function start() {
+  const PORT = Number(process.env.PORT ?? 9998)
+  const HOST = process.env.HOST ?? '0.0.0.0'
   const devOrigin = process.env.FRONTEND_ORIGIN
   await fastify.register(cors, {
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
     origin: (origin, cb) => {
       if (!origin) return cb(null, true)                       // same-origin / curl / no-CORS
       try {
-        if (new URL(origin).port === '9999') return cb(null, true)
+        const { port } = new URL(origin)
+        if (port === '9999' || port === String(PORT)) return cb(null, true)
       } catch { /* ignore malformed */ }
       if (devOrigin && origin === devOrigin) return cb(null, true)
       cb(new Error('Not allowed by CORS'), false)
@@ -56,9 +59,6 @@ async function start() {
       return reply.sendFile('index.html')
     })
   }
-
-  const PORT = Number(process.env.PORT ?? 9998)
-  const HOST = process.env.HOST ?? '0.0.0.0'
 
   try {
     await fastify.listen({ port: PORT, host: HOST })
