@@ -43,7 +43,6 @@ cp .env.example backend/.env
 
 | Variable | Default | Description |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | — | Optional; enables billing data in Usage view |
 | `CLAUDE_BIN` | `claude` | Path to the `claude` binary |
 | `PORT` | `9998` | Backend listen port |
 | `HOST` | `0.0.0.0` | Backend listen address |
@@ -69,22 +68,30 @@ The Makefile's `dev-backend` target and `run.sh` both conditionally set `NODE_EX
 | Method | Path | Handler | Description |
 |---|---|---|---|
 | GET | `/api/account` | `routes/account.ts` | Account info + claude version |
-| GET | `/api/usage` | `routes/usage.ts` | Usage stats (local logs + optional billing API) |
+| GET | `/api/usage` | `routes/usage.ts` | Usage stats (local logs) |
 | GET/POST | `/api/sessions` | `routes/sessions.ts` | List sessions, create session |
 | POST | `/api/sessions/:id/stop` | `routes/sessions.ts` | Stop active session |
 | GET/POST | `/api/settings` | `routes/settings.ts` | Persistent key-value settings (SQLite-backed) |
 | GET | `/health` | `server.ts` | Health check |
-| WS | `/ws/session/:id` | `ws/session.ts` | PTY I/O over WebSocket |
+| WS | `/ws/session/:id` | `ws/session.ts` | Chat PTY I/O over WebSocket |
+| WS | `/ws/terminal/:id` | `ws/terminal.ts` | Terminal PTY I/O over WebSocket |
+| DELETE | `/api/sessions/:id` | `routes/sessions.ts` | Delete session (DB + `~/.claude/projects/` file) |
 
 ### Settings route
 
-`routes/settings.ts` stores app settings in the SQLite `settings` table. Currently the only key is `bypass_permissions` (default `true`). Only keys in the `ALLOWED` set are accepted — add new keys there before using them.
+`routes/settings.ts` stores app settings in the SQLite `settings` table. Keys: `bypass_permissions` (default `true`) and `session_mode` (default `'terminal'`). Only keys in the `ALLOWED` set are accepted — add new keys there before using them.
+
+### Session modes
+
+Two modes are supported per session, stored in the `sessions.mode` column:
+- **`chat`** — structured JSON streaming via `/ws/session/:id`; messages stored in `messages` table
+- **`terminal`** — raw PTY via `/ws/terminal/:id`; scrollback persisted in `sessions.terminal_scrollback` (256 KB circular buffer, flushed to SQLite on activity with a 500 ms debounce)
 
 ### Frontend data flow
 
 - `useDashboard.ts` fetches account + usage + sessions in parallel with a 60s auto-refresh
-- `SessionContext.tsx` holds the active session state; `useWebSocket.ts` manages the WS connection with exponential-backoff reconnect
-- `TerminalDrawer.tsx` wraps xterm.js and is **never unmounted** — it is CSS-toggled (display: none) to preserve terminal state across view switches
+- `SessionContext.tsx` holds the active session state (including `mode`); `useWebSocket.ts` manages the chat WS connection; `useTerminalSession.ts` manages the terminal WS connection
+- `TerminalSession.tsx` and `TerminalDrawer.tsx` are **never unmounted** — both are CSS-toggled (`display: none`) to preserve xterm scroll buffer across navigation
 
 ### Syntax highlighting
 
@@ -102,7 +109,7 @@ docker-compose up
 # Dashboard at http://localhost:8080
 ```
 
-`docker-compose.yml` mounts `~/.claude` (read-only) and `~/projects` (read-write) from the host.
+`docker-compose.yml` mounts `~/.claude` (read-write — required for session deletion) and `~/projects` (read-write) from the host.
 
 ## Systemd service (Linux)
 

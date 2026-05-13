@@ -10,7 +10,7 @@ export function useWebSocket(onOutput: (data: string) => void) {
   const attemptsRef = useRef(0)
 
   useEffect(() => {
-    if (!state.sessionId) return
+    if (!state.sessionId || state.mode === 'terminal') return
     let closed = false
 
     function connect() {
@@ -92,7 +92,7 @@ export function useWebSocket(onOutput: (data: string) => void) {
       wsRef.current?.close()
       wsRef.current = null
     }
-  }, [state.sessionId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [state.sessionId, state.mode]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const send = useCallback((payload: object) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {

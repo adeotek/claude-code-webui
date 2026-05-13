@@ -4,16 +4,16 @@
 [![Docker](https://img.shields.io/badge/docker-ghcr.io-blue)](https://github.com/adeotek/claude-code-webui/pkgs/container/claude-code-webui)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-A browser-based UI for [Claude Code](https://claude.ai/code) — manage sessions, track token usage, and chat with Claude from any device on your network.
+A browser-based UI for [Claude Code](https://claude.ai/code) — manage sessions, track token usage, and interact with Claude from any device on your network.
 
 ## Features
 
 - **Session management** — create, resume, rename, and delete Claude Code sessions
-- **Real-time chat** — markdown rendering with syntax-highlighted code blocks
-- **Terminal drawer** — integrated xterm.js terminal that persists across view switches
-- **Usage dashboard** — daily token usage graph with optional Anthropic billing data
+- **Terminal mode** — full interactive xterm.js terminal connected directly to Claude Code (default)
+- **Chat mode** — structured message view with markdown rendering and syntax-highlighted code blocks
+- **Usage dashboard** — daily token usage graph
 - **Account overview** — Claude version, authentication status, and model info
-- **Persistent history** — session messages and token counts stored in SQLite
+- **Persistent history** — session messages, token counts, and terminal scrollback stored in SQLite
 
 ## Quick Start
 
@@ -55,7 +55,7 @@ docker-compose up
 
 Open **http://localhost:8080**.
 
-`docker-compose.yml` mounts `~/.claude` (read-only) and `~/projects` (read-write) from the host. To build the image locally instead of pulling from the registry:
+`docker-compose.yml` mounts `~/.claude` (read-write — required for session deletion) and `~/projects` (read-write) from the host. To build the image locally instead of pulling from the registry:
 
 ```bash
 docker build -t claude-code-webui .
@@ -72,7 +72,6 @@ cp .env.example backend/.env
 
 | Variable | Default | Description |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | — | Optional — enables billing data in the Usage view |
 | `CLAUDE_BIN` | `claude` | Path to the `claude` binary |
 | `PORT` | `9998` | Backend listen port |
 | `HOST` | `0.0.0.0` | Backend listen address |

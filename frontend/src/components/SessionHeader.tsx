@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, List, Square, Pencil } from 'lucide-react'
 import { useSession } from '../context/SessionContext'
+import { formatModelName, formatTokens, formatDuration } from '../utils/format'
 
 interface SessionHeaderProps {
   onNewSession: () => void
@@ -12,24 +13,6 @@ interface SessionHeaderProps {
   onRename?: (name: string) => Promise<void>
 }
 
-function formatModelName(model: string): string {
-  const s = model.replace(/^claude-/, '').replace(/-\d{8}$/, '')
-  const m = s.match(/^(opus|sonnet|haiku)-(\d+)-(\d+)/)
-  if (m) return `${m[1].charAt(0).toUpperCase() + m[1].slice(1)} ${m[2]}.${m[3]}`
-  const m2 = s.match(/^(\d+)-(?:(\d+)-)?(\w+)$/)
-  if (m2) {
-    const family = m2[3].charAt(0).toUpperCase() + m2[3].slice(1)
-    return m2[2] ? `${family} ${m2[1]}.${m2[2]}` : `${family} ${m2[1]}`
-  }
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`
-  return String(n)
-}
-
 function formatCreatedAt(ts: number): string {
   const d = new Date(ts)
   const now = new Date()
@@ -39,15 +22,6 @@ function formatCreatedAt(ts: number): string {
   return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + time
 }
 
-function formatDuration(ms: number): string {
-  const totalSec = Math.floor(ms / 1000)
-  const h = Math.floor(totalSec / 3600)
-  const m = Math.floor((totalSec % 3600) / 60)
-  const s = totalSec % 60
-  if (h > 0) return `${h}h ${m}m ${s}s`
-  if (m > 0) return `${m}m ${s}s`
-  return `${s}s`
-}
 
 interface StatChipProps { label: string; value: string; valueClass?: string }
 function StatChip({ label, value, valueClass = 'text-text-secondary' }: StatChipProps) {
@@ -181,10 +155,12 @@ export default function SessionHeader({
         {sessionStartedAt != null && (
           <StatChip label="created" value={formatCreatedAt(sessionStartedAt)} />
         )}
-        {workingMs > 0 && (
+        {workingMs > 0 && state.mode !== 'terminal' && (
           <StatChip label="dur" value={formatDuration(workingMs)} valueClass="text-status-green" />
         )}
-        <StatChip label="tokens" value={formatTokens(totalTokens)} />
+        {state.mode !== 'terminal' && (
+          <StatChip label="tokens" value={formatTokens(totalTokens)} />
+        )}
       </div>
 
       <div className="flex items-center gap-2 ml-auto">

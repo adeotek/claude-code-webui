@@ -1,10 +1,11 @@
 import type { FastifyInstance } from 'fastify'
-import { v4 as uuidv4 } from 'uuid'
+import { randomUUID } from 'crypto'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
 import { db } from '../db/schema'
 import { sessionManager } from '../ws/session'
+import { terminalManager } from '../ws/terminal'
 
 export async function sessionRoutes(fastify: FastifyInstance) {
   fastify.get<{ Querystring: { path?: string } }>('/api/directories', async (req, reply) => {
@@ -48,10 +49,15 @@ export async function sessionRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'workdir is required' })
     }
 
-    const id = uuidv4()
+    const modeRow = db
+      .prepare("SELECT value FROM settings WHERE key = 'session_mode'")
+      .get() as { value: string } | undefined
+    const mode = modeRow?.value === 'terminal' ? 'terminal' : 'chat'
+
+    const id = randomUUID()
     db.prepare(
-      'INSERT INTO sessions (id, workdir, name, started_at) VALUES (?, ?, ?, ?)',
-    ).run(id, workdir, name?.trim() || null, Date.now())
+      'INSERT INTO sessions (id, workdir, name, mode, started_at) VALUES (?, ?, ?, ?, ?)',
+    ).run(id, workdir, name?.trim() || null, mode, Date.now())
 
     return reply.status(201).send({ sessionId: id })
   })
@@ -59,6 +65,7 @@ export async function sessionRoutes(fastify: FastifyInstance) {
   fastify.post<{ Params: { id: string } }>('/api/sessions/:id/stop', async (req, reply) => {
     const { id } = req.params
     sessionManager.kill(id)
+    terminalManager.kill(id)
     db.prepare('UPDATE sessions SET ended_at = ? WHERE id = ?').run(Date.now(), id)
     return reply.send({ ok: true })
   })
@@ -93,14 +100,28 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 
   fastify.delete<{ Params: { id: string } }>('/api/sessions/:id', async (req, reply) => {
     const { id } = req.params
-    const session = db.prepare('SELECT id FROM sessions WHERE id = ?').get(id)
+    const session = db
+      .prepare('SELECT workdir, claude_session_id FROM sessions WHERE id = ?')
+      .get(id) as { workdir: string; claude_session_id: string | null } | undefined
     if (!session) {
       return reply.status(404).send({ error: 'Session not found' })
     }
-    // Kill the session if it's running
     sessionManager.kill(id)
+    terminalManager.kill(id)
     db.prepare('DELETE FROM messages WHERE session_id = ?').run(id)
     db.prepare('DELETE FROM sessions WHERE id = ?').run(id)
+
+    if (session.claude_session_id) {
+      const absWorkdir = session.workdir.startsWith('~')
+        ? path.join(os.homedir(), session.workdir.slice(1))
+        : session.workdir
+      const encoded = absWorkdir.replace(/[/.]/g, '-')
+      const projectDir = path.join(os.homedir(), '.claude', 'projects', encoded)
+      const base = path.join(projectDir, session.claude_session_id)
+      try { fs.rmSync(`${base}.jsonl`) } catch { /* already gone */ }
+      try { fs.rmSync(base, { recursive: true }) } catch { /* already gone or absent */ }
+    }
+
     return reply.send({ ok: true })
   })
 }
