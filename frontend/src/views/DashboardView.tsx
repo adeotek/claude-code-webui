@@ -1,9 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useSession } from '../context/SessionContext'
 import { useWebSocket } from '../hooks/useWebSocket'
-import { useDashboard } from '../hooks/useDashboard'
-import type { Session } from '../hooks/useDashboard'
+import { useDashboard, type Session } from '../hooks/useDashboard'
 import StatsStrip from '../components/StatsStrip'
 import SessionList from '../components/SessionList'
 import SessionHeader from '../components/SessionHeader'
@@ -17,8 +17,10 @@ import TerminalSession from '../components/TerminalSession'
 
 export default function DashboardView() {
   const { state, dispatch } = useSession()
+  const location = useLocation()
+  const navigate = useNavigate()
   const terminalRef = useRef<TerminalDrawerHandle>(null)
-  const [showModal, setShowModal] = useState(false)
+  const [showModal, setShowModal] = useState(location.state?.openModal === true)
   const [chartOpen, setChartOpen] = useState(false)
 
   const { account, usage, sessions, activeSessions, defaultSessionMode, loading, refresh } = useDashboard()
@@ -58,6 +60,7 @@ export default function DashboardView() {
     if (account?.model) dispatch({ type: 'MODEL_SET', model: account.model })
     setShowModal(false)
     refresh()
+    navigate(`/session/${sessionId}`)
   }
 
   function handleNewSession() {
@@ -65,12 +68,12 @@ export default function DashboardView() {
       fetch(`/api/sessions/${state.sessionId}/stop`, { method: 'POST' }).catch(() => {})
     }
     dispatch({ type: 'SESSION_CLEARED' })
-    setShowModal(true)
+    navigate('/new')
   }
 
   function handleSessionsList() {
-    // Detach from the session (PTY keeps running on backend; user can reconnect from the list)
     dispatch({ type: 'SESSION_CLEARED' })
+    navigate('/')
   }
 
   function handleStopSession() {
@@ -79,6 +82,7 @@ export default function DashboardView() {
     }
     dispatch({ type: 'SESSION_CLEARED' })
     refresh()
+    navigate('/')
   }
 
   function handleStopListSession(sessionId: string) {
@@ -94,11 +98,6 @@ export default function DashboardView() {
     })
     // Use type:'chat' for structured chat messages (terminal raw input uses type:'input')
     send({ type: 'chat', data: text + '\n' })
-  }
-
-  function handleResume(session: Session) {
-    dispatch({ type: 'RESUME_SESSION', id: session.id, workdir: session.workdir, mode: session.mode, ...(session.name ? { name: session.name } : {}) })
-    if (account?.model) dispatch({ type: 'MODEL_SET', model: account.model })
   }
 
   async function handleRenameSession(name: string) {
@@ -217,7 +216,6 @@ export default function DashboardView() {
         ) : (
           <SessionList
             sessions={displaySessions}
-            onResume={handleResume}
             onStop={handleStopListSession}
             onDelete={handleDelete}
             onNewSession={() => setShowModal(true)}

@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { db } from '../db/schema'
 
 const DEFAULTS: Record<string, string> = {
-  bypass_permissions: 'true',
+  bypass_permissions: 'false',
   session_mode: 'terminal',
 }
 

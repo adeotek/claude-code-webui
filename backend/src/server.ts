@@ -10,6 +10,7 @@ import { sessionRoutes } from './routes/sessions'
 import { sessionWsRoutes } from './ws/session'
 import { terminalWsRoutes } from './ws/terminal'
 import { settingsRoutes } from './routes/settings'
+import { initAccountCache } from './services/accountCache'
 
 // TODO: add bearer token auth — add @fastify/bearer-auth plugin here
 // and set token via DASHBOARD_TOKEN env var
@@ -18,15 +19,16 @@ import { settingsRoutes } from './routes/settings'
 const fastify = Fastify({ logger: true })
 
 async function start() {
-  const devOrigin = process.env.FRONTEND_ORIGIN
+  const PORT = Number(process.env.PORT ?? 9998)
+  const HOST = process.env.HOST ?? '0.0.0.0'
   await fastify.register(cors, {
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
     origin: (origin, cb) => {
       if (!origin) return cb(null, true)                       // same-origin / curl / no-CORS
       try {
-        if (new URL(origin).port === '9999') return cb(null, true)
+        const { port } = new URL(origin)
+        if (port === '9999' || port === String(PORT)) return cb(null, true)
       } catch { /* ignore malformed */ }
-      if (devOrigin && origin === devOrigin) return cb(null, true)
       cb(new Error('Not allowed by CORS'), false)
     },
   })
@@ -57,15 +59,14 @@ async function start() {
     })
   }
 
-  const PORT = Number(process.env.PORT ?? 9998)
-  const HOST = process.env.HOST ?? '0.0.0.0'
-
   try {
     await fastify.listen({ port: PORT, host: HOST })
   } catch (err) {
     fastify.log.error(err)
     process.exit(1)
   }
+
+  initAccountCache().catch((err) => fastify.log.error(err))
 }
 
 start()

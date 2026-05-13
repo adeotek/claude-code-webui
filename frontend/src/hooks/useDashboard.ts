@@ -38,15 +38,14 @@ export function useDashboard(month?: string): DashboardData & { refresh: () => v
     setLoading(true)
     setError(null)
 
+    // Fast group: account (cached), sessions, settings — unblocks the UI immediately.
     Promise.all([
       fetch('/api/account').then((r) => r.json() as Promise<AccountInfo>),
-      fetch(`/api/usage?month=${target}`).then((r) => r.json() as Promise<UsageData>),
       fetch('/api/sessions').then((r) => r.json() as Promise<Session[]>),
       fetch('/api/settings').then((r) => r.json() as Promise<Record<string, string>>),
     ])
-      .then(([acc, usg, sess, settings]) => {
+      .then(([acc, sess, settings]) => {
         setAccount(acc)
-        setUsage(usg)
         setSessions(Array.isArray(sess) ? sess : [])
         setDefaultSessionMode(settings.session_mode === 'terminal' ? 'terminal' : 'chat')
         setLoading(false)
@@ -55,6 +54,12 @@ export function useDashboard(month?: string): DashboardData & { refresh: () => v
         setError(e.message)
         setLoading(false)
       })
+
+    // Slow group: usage (file I/O + optional network) fills in independently.
+    fetch(`/api/usage?month=${target}`)
+      .then((r) => r.json() as Promise<UsageData>)
+      .then(setUsage)
+      .catch(() => {})
   }, [target])
 
   useEffect(() => {

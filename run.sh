@@ -3,10 +3,6 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Fedora / RHEL: include system CA bundle so Anthropic API calls succeed
-CA_BUNDLE="/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem"
-[[ -f "$CA_BUNDLE" ]] && export NODE_EXTRA_CA_CERTS="$CA_BUNDLE"
-
 # Bootstrap .env on first run
 if [[ ! -f "$ROOT_DIR/backend/.env" ]]; then
   echo "backend/.env not found — copying from .env.example"

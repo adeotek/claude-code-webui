@@ -27,7 +27,11 @@ export async function getAccountInfo(): Promise<AccountInfo> {
     authStatus: 'unknown',
   }
 
-  const versionResult = await execFileNoThrow(claudeBin(), ['--version'])
+  const [versionResult, authResult] = await Promise.all([
+    execFileNoThrow(claudeBin(), ['--version']),
+    execFileNoThrow(claudeBin(), ['config', 'get', 'oauthToken']),
+  ])
+
   if (versionResult.status !== 0) return base
 
   base.claudeInstalled = true
@@ -42,7 +46,6 @@ export async function getAccountInfo(): Promise<AccountInfo> {
     // settings.json absent or malformed — model stays null
   }
 
-  const authResult = await execFileNoThrow(claudeBin(), ['config', 'get', 'oauthToken'])
   base.authStatus = authResult.status === 0 && authResult.stdout.trim().length > 0
     ? 'authenticated'
     : 'unauthenticated'

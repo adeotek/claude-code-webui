@@ -32,7 +32,7 @@ describe('settings routes', () => {
     expect(res.statusCode).toBe(200)
     const body = res.json()
     expect(body).toMatchObject({
-      bypass_permissions: 'true',
+      bypass_permissions: 'false',
       session_mode: 'terminal',
     })
   })
