@@ -74,6 +74,9 @@ class ActiveTerminalSession {
       this.broadcast({ type: 'status', state: 'disconnected' })
       if (this.idleTimer) clearTimeout(this.idleTimer)
       this.onCleanup(this.id)
+      // Close sockets so the frontend reconnect loop fires and spawns a fresh PTY.
+      for (const ws of this.sockets) ws.close()
+      this.sockets.clear()
     })
   }
 
@@ -108,6 +111,8 @@ class ActiveTerminalSession {
     }
     if (this.idleTimer) clearTimeout(this.idleTimer)
     this.broadcast({ type: 'status', state: 'disconnected' })
+    for (const ws of this.sockets) ws.close()
+    this.sockets.clear()
   }
 
   private broadcast(msg: TerminalServerMessage) {
