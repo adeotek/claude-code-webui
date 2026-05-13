@@ -17,6 +17,7 @@ export interface SessionState {
   workdir: string | null
   name: string | null
   model: string | null
+  mode: 'chat' | 'terminal'
   wsState: 'disconnected' | 'connecting' | 'running' | 'idle' | 'error'
   messages: Message[]
   workingTimeMs: number       // cumulative ms spent in 'running' state
@@ -26,9 +27,9 @@ export interface SessionState {
 }
 
 type Action =
-  | { type: 'SESSION_CREATED'; sessionId: string; workdir: string; name?: string }
+  | { type: 'SESSION_CREATED'; sessionId: string; workdir: string; name?: string; mode: 'chat' | 'terminal' }
   | { type: 'SESSION_CLEARED' }
-  | { type: 'RESUME_SESSION'; id: string; workdir: string; name?: string }
+  | { type: 'RESUME_SESSION'; id: string; workdir: string; name?: string; mode: 'chat' | 'terminal' }
   | { type: 'WS_STATE'; state: SessionState['wsState']; timestamp: number }
   | { type: 'MESSAGE_ADDED'; message: Message }
   | { type: 'HISTORY_LOADED'; messages: Message[] }
@@ -39,11 +40,12 @@ type Action =
   | { type: 'PERMISSION_REQUEST'; permissions: PermissionRequest[] }
   | { type: 'PERMISSION_CLEARED' }
 
-const initial: SessionState = {
+export const initial: SessionState = {
   sessionId: null,
   workdir: null,
   name: null,
   model: null,
+  mode: 'chat',
   wsState: 'disconnected',
   messages: [],
   workingTimeMs: 0,
@@ -52,14 +54,14 @@ const initial: SessionState = {
   pendingPermissions: null,
 }
 
-function reducer(state: SessionState, action: Action): SessionState {
+export function reducer(state: SessionState, action: Action): SessionState {
   switch (action.type) {
     case 'SESSION_CREATED':
-      return { ...state, sessionId: action.sessionId, workdir: action.workdir, name: action.name ?? null, messages: [], wsState: 'connecting', workingTimeMs: 0, runningStartedAt: null, pendingPermissions: null }
+      return { ...state, sessionId: action.sessionId, workdir: action.workdir, name: action.name ?? null, mode: action.mode, messages: [], wsState: 'connecting', workingTimeMs: 0, runningStartedAt: null, pendingPermissions: null }
     case 'SESSION_CLEARED':
       return { ...initial }
     case 'RESUME_SESSION':
-      return { ...state, sessionId: action.id, workdir: action.workdir, name: action.name ?? null, messages: [], wsState: 'connecting', workingTimeMs: 0, runningStartedAt: null, totalTokens: 0, pendingPermissions: null }
+      return { ...state, sessionId: action.id, workdir: action.workdir, name: action.name ?? null, mode: action.mode, messages: [], wsState: 'connecting', workingTimeMs: 0, runningStartedAt: null, totalTokens: 0, pendingPermissions: null }
     case 'WS_STATE': {
       const prev = state.wsState
       const next = action.state

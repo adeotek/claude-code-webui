@@ -1,4 +1,4 @@
-.PHONY: dev dev-backend dev-frontend build lint install clean run service-install service-uninstall service-test
+.PHONY: dev dev-backend dev-frontend build lint test install clean run service-install service-uninstall service-test
 
 # Fedora / RHEL hosts lack the Google Trust Services intermediate CA that
 # Anthropic's API uses.  Set NODE_EXTRA_CA_CERTS only when the bundle exists
@@ -22,6 +22,10 @@ build:
 lint:
 	cd backend && npm run lint
 	cd frontend && npm run lint
+
+test:
+	cd backend && npm test
+	cd frontend && npm test
 
 install:
 	cd backend && npm install

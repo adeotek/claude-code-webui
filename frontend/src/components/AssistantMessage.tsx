@@ -54,8 +54,8 @@ export default function AssistantMessage({ content }: AssistantMessageProps) {
         C
       </div>
       <div className="max-w-[85%] bg-bg-surface border border-border-subtle rounded-lg rounded-bl-sm px-3 py-2">
+        <div className="text-text-primary text-xs leading-relaxed prose-invert">
         <ReactMarkdown
-          className="text-text-primary text-xs leading-relaxed prose-invert"
           components={{
             code({ className, children, ...props }) {
               const langMatch = (className ?? '').match(/language-(\w+)/)
@@ -82,6 +82,7 @@ export default function AssistantMessage({ content }: AssistantMessageProps) {
         >
           {content}
         </ReactMarkdown>
+        </div>
       </div>
     </div>
   )

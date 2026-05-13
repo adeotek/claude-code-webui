@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { hostname as getHostname, networkInterfaces } from 'os'
 
 const hostname = getHostname()
@@ -8,15 +9,15 @@ const localIps = (Object.values(networkInterfaces()).flat() as { internal: boole
   .map(iface => iface.address)
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [tailwindcss(), react()],
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-xterm': ['@xterm/xterm', '@xterm/addon-fit'],
-          'vendor-charts': ['recharts'],
-          'vendor-markdown': ['react-markdown', 'react-syntax-highlighter'],
+        manualChunks(id) {
+          if (id.includes('react-markdown') || id.includes('react-syntax-highlighter')) return 'vendor-markdown'
+          if (id.includes('recharts') || id.includes('d3-') || id.includes('victory-')) return 'vendor-charts'
+          if (id.includes('@xterm')) return 'vendor-xterm'
+          if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) return 'vendor-react'
         },
       },
     },

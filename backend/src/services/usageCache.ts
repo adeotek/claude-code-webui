@@ -1,6 +1,5 @@
 import { db } from '../db/schema'
 import { parseLocalUsage, type DayUsage } from './localLogs'
-import { fetchApiUsage } from './anthropicApi'
 import { fetchOAuthUsage, type OAuthUsageData } from './oauthUsage'
 
 const CACHE_TTL_MS = 60 * 60 * 1000 // 1 hour
@@ -39,13 +38,8 @@ export async function getUsage(month: string): Promise<UsageResult> {
     )
   }
 
-  const [localDays, apiDays] = await Promise.all([
-    Promise.resolve(parseLocalUsage(month)),
-    fetchApiUsage(month),
-  ])
-
-  const merged = mergeDays(localDays, apiDays)
-  const sources: string[] = ['local', ...(apiDays.length > 0 ? ['api'] : [])]
+  const merged = parseLocalUsage(month)
+  const sources: string[] = ['local']
 
   const upsert = db.prepare(`
     INSERT INTO usage_cache (date, input_tokens, output_tokens, cost_usd, source, cached_at)
@@ -75,20 +69,6 @@ export async function getUsage(month: string): Promise<UsageResult> {
   return buildResult(merged, month, sources, rateLimits)
 }
 
-function mergeDays(local: DayUsage[], api: DayUsage[]): DayUsage[] {
-  const map = new Map<string, DayUsage>()
-  for (const d of local) map.set(d.date, { ...d })
-  for (const d of api) {
-    const existing = map.get(d.date)
-    if (existing) {
-      // API is authoritative for cost; local provides session-level token detail
-      existing.costUsd = d.costUsd
-    } else {
-      map.set(d.date, { ...d })
-    }
-  }
-  return [...map.values()].sort((a, b) => a.date.localeCompare(b.date))
-}
 
 function buildResult(days: DayUsage[], month: string, sources: string[], rateLimits: OAuthUsageData | null): UsageResult {
   const sessions = (db
