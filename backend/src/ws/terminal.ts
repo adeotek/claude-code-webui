@@ -16,7 +16,10 @@ function getBypassPermissions(): boolean {
 
 type TerminalServerMessage =
   | { type: 'output'; data: string }
+  | { type: 'history'; data: string }
   | { type: 'status'; state: string }
+
+const MAX_SCROLLBACK_BYTES = 256 * 1024
 
 class ActiveTerminalSession {
   private ptyProc: pty.IPty | null = null
@@ -24,6 +27,7 @@ class ActiveTerminalSession {
   private idleTimer: NodeJS.Timeout | null = null
   private spawnError: string | null = null
   private spawned = false
+  private scrollback = ''
 
   constructor(
     readonly id: string,
@@ -65,6 +69,10 @@ class ActiveTerminalSession {
 
     this.ptyProc.onData((data) => {
       this.resetIdle()
+      this.scrollback += data
+      if (this.scrollback.length > MAX_SCROLLBACK_BYTES) {
+        this.scrollback = this.scrollback.slice(this.scrollback.length - MAX_SCROLLBACK_BYTES)
+      }
       this.broadcast({ type: 'output', data })
     })
 
@@ -86,6 +94,9 @@ class ActiveTerminalSession {
     // If PTY already running (reconnect), confirm immediately.
     // If not yet spawned, wait for the first resize message to spawn with correct dimensions.
     if (this.spawned) {
+      if (this.scrollback) {
+        ws.send(JSON.stringify({ type: 'history', data: this.scrollback }))
+      }
       ws.send(JSON.stringify({ type: 'status', state: 'connected' }))
     }
   }

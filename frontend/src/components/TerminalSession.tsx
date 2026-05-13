@@ -30,7 +30,15 @@ export default function TerminalSession() {
     })
   }, [])
 
-  const { send } = useTerminalSession(onOutput, onConnect)
+  // Replay scrollback from the backend on reconnect (covers page refresh).
+  // Clears first so history isn't duplicated on top of live content from CSS-toggle sessions.
+  const onHistory = useCallback((data: string) => {
+    if (!termRef.current) return
+    termRef.current.clear()
+    termRef.current.write(data)
+  }, [])
+
+  const { send } = useTerminalSession(onOutput, onConnect, onHistory)
   sendRef.current = send
 
   useEffect(() => {

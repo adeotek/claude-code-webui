@@ -4,7 +4,7 @@ import { useSession } from '../context/SessionContext'
 const MAX_RECONNECT_ATTEMPTS = 5
 const BASE_DELAY_MS = 500
 
-export function useTerminalSession(onOutput: (data: string) => void, onConnect?: () => void) {
+export function useTerminalSession(onOutput: (data: string) => void, onConnect?: () => void, onHistory?: (data: string) => void) {
   const { state, dispatch } = useSession()
   const wsRef = useRef<WebSocket | null>(null)
   const attemptsRef = useRef(0)
@@ -34,6 +34,8 @@ export function useTerminalSession(onOutput: (data: string) => void, onConnect?:
           }
           if (msg.type === 'output' && msg.data) {
             onOutput(msg.data)
+          } else if (msg.type === 'history' && msg.data) {
+            onHistory?.(msg.data)
           } else if (msg.type === 'status') {
             if (msg.state === 'connected') {
               dispatch({ type: 'WS_STATE', timestamp: Date.now(), state: 'idle' })
