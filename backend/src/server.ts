@@ -59,14 +59,14 @@ async function start() {
     })
   }
 
-  await initAccountCache()
-
   try {
     await fastify.listen({ port: PORT, host: HOST })
   } catch (err) {
     fastify.log.error(err)
     process.exit(1)
   }
+
+  initAccountCache().catch((err) => fastify.log.error(err))
 }
 
 start()
