@@ -2,12 +2,15 @@ import { useEffect, useRef, useCallback } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
+import { useSession } from '../context/SessionContext'
 import { useTerminalSession } from '../hooks/useTerminalSession'
 
 export default function TerminalSession() {
+  const { state } = useSession()
   const containerRef = useRef<HTMLDivElement>(null)
   const termRef = useRef<Terminal | null>(null)
   const fitRef = useRef<FitAddon | null>(null)
+  const lastSessionIdRef = useRef<string | null>(null)
 
   const onOutput = useCallback((data: string) => {
     termRef.current?.write(data)
@@ -58,11 +61,26 @@ export default function TerminalSession() {
     return () => term.dispose()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Re-fit terminal when container dimensions change (window resize, panel resize)
+  // Clear xterm when switching to a different session so stale output isn't shown.
+  // Navigating to the sessions list and back to the SAME session skips the clear.
+  useEffect(() => {
+    if (!state.sessionId) return
+    if (lastSessionIdRef.current !== null && lastSessionIdRef.current !== state.sessionId) {
+      termRef.current?.clear()
+    }
+    lastSessionIdRef.current = state.sessionId
+  }, [state.sessionId])
+
+  // Re-fit terminal when container dimensions change (window resize, panel resize).
+  // Guard against zero-size: when the terminal block is CSS-hidden its dimensions
+  // report as 0, and fit.fit() would corrupt the PTY size.
   useEffect(() => {
     if (!containerRef.current) return
     const observer = new ResizeObserver(() => {
-      requestAnimationFrame(() => fitRef.current?.fit())
+      requestAnimationFrame(() => {
+        const el = containerRef.current
+        if (el && el.offsetWidth > 0 && el.offsetHeight > 0) fitRef.current?.fit()
+      })
     })
     observer.observe(containerRef.current)
     return () => observer.disconnect()
