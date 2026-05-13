@@ -13,13 +13,22 @@ export default function TerminalSession() {
     termRef.current?.write(data)
   }, [])
 
-  // Called when WS opens: fit to browser dimensions, which triggers term.onResize → sends
-  // the resize message that spawns the PTY with the correct initial size.
+  // Stable ref so onConnect can call send without a declaration-order cycle.
+  const sendRef = useRef<(payload: object) => void>(() => {})
+
+  // Called when WS opens. fit.fit() measures the container; we always send the resulting
+  // dimensions explicitly because xterm only fires onResize when size *changes* — on
+  // reconnect the terminal is already the right size and onResize would be skipped.
   const onConnect = useCallback(() => {
-    requestAnimationFrame(() => fitRef.current?.fit())
+    requestAnimationFrame(() => {
+      if (!fitRef.current || !termRef.current) return
+      fitRef.current.fit()
+      sendRef.current({ type: 'resize', cols: termRef.current.cols, rows: termRef.current.rows })
+    })
   }, [])
 
   const { send } = useTerminalSession(onOutput, onConnect)
+  sendRef.current = send
 
   useEffect(() => {
     const term = new Terminal({
