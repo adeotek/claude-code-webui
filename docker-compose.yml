@@ -6,11 +6,10 @@ services:
     ports:
       - "8080:9998"
     environment:
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - CLAUDE_BIN=${CLAUDE_BIN:-claude}
     volumes:
-      # Mount Claude Code credentials and session logs (read-only)
-      - ~/.claude:/root/.claude:ro
+      # Mount Claude Code credentials and session data (read-write for session deletion)
+      - ~/.claude:/root/.claude:rw
       # Mount projects directory for working directory access
       - ~/projects:/projects:rw
     restart: unless-stopped

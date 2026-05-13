@@ -100,7 +100,9 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 
   fastify.delete<{ Params: { id: string } }>('/api/sessions/:id', async (req, reply) => {
     const { id } = req.params
-    const session = db.prepare('SELECT id FROM sessions WHERE id = ?').get(id)
+    const session = db
+      .prepare('SELECT workdir, claude_session_id FROM sessions WHERE id = ?')
+      .get(id) as { workdir: string; claude_session_id: string | null } | undefined
     if (!session) {
       return reply.status(404).send({ error: 'Session not found' })
     }
@@ -108,6 +110,18 @@ export async function sessionRoutes(fastify: FastifyInstance) {
     terminalManager.kill(id)
     db.prepare('DELETE FROM messages WHERE session_id = ?').run(id)
     db.prepare('DELETE FROM sessions WHERE id = ?').run(id)
+
+    if (session.claude_session_id) {
+      const absWorkdir = session.workdir.startsWith('~')
+        ? path.join(os.homedir(), session.workdir.slice(1))
+        : session.workdir
+      const encoded = absWorkdir.replace(/[/.]/g, '-')
+      const projectDir = path.join(os.homedir(), '.claude', 'projects', encoded)
+      const base = path.join(projectDir, session.claude_session_id)
+      try { fs.rmSync(`${base}.jsonl`) } catch { /* already gone */ }
+      try { fs.rmSync(base, { recursive: true }) } catch { /* already gone or absent */ }
+    }
+
     return reply.send({ ok: true })
   })
 }

@@ -73,6 +73,10 @@ function initDb(): Database.Database {
     db.prepare("ALTER TABLE sessions ADD COLUMN mode TEXT NOT NULL DEFAULT 'chat'").run()
   }
 
+  if (!sessionCols.find((c) => c.name === 'terminal_scrollback')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN terminal_scrollback TEXT').run()
+  }
+
   db.prepare(`
     CREATE TABLE IF NOT EXISTS settings (
       key   TEXT PRIMARY KEY,

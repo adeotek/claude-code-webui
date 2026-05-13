@@ -76,16 +76,14 @@ export default function SessionHeader({
   const [renameSaving, setRenameSaving] = useState(false)
 
   useEffect(() => {
-    const active = state.wsState === 'running' || (state.mode === 'terminal' && state.wsState === 'idle')
-    if (!active) return
+    if (state.wsState !== 'running') return
     const timer = setInterval(() => setTick((t) => t + 1), 1000)
     return () => clearInterval(timer)
-  }, [state.wsState, state.mode])
+  }, [state.wsState])
 
   const workingMs =
-    state.mode === 'terminal' && sessionStartedAt != null
-      ? Date.now() - sessionStartedAt
-      : state.workingTimeMs + (state.runningStartedAt != null ? Date.now() - state.runningStartedAt : 0)
+    state.workingTimeMs +
+    (state.runningStartedAt != null ? Date.now() - state.runningStartedAt : 0)
 
   function startRename() {
     setNameInput(sessionName ?? '')
@@ -183,7 +181,7 @@ export default function SessionHeader({
         {sessionStartedAt != null && (
           <StatChip label="created" value={formatCreatedAt(sessionStartedAt)} />
         )}
-        {workingMs > 0 && (
+        {workingMs > 0 && state.mode !== 'terminal' && (
           <StatChip label="dur" value={formatDuration(workingMs)} valueClass="text-status-green" />
         )}
         {state.mode !== 'terminal' && (

@@ -97,7 +97,7 @@ export default function DashboardView() {
   }
 
   function handleResume(session: Session) {
-    dispatch({ type: 'RESUME_SESSION', id: session.id, workdir: session.workdir, mode: defaultSessionMode, ...(session.name ? { name: session.name } : {}) })
+    dispatch({ type: 'RESUME_SESSION', id: session.id, workdir: session.workdir, mode: session.mode, ...(session.name ? { name: session.name } : {}) })
     if (account?.model) dispatch({ type: 'MODEL_SET', model: account.model })
   }
 

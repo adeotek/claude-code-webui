@@ -25,6 +25,7 @@ class ActiveTerminalSession {
   private ptyProc: pty.IPty | null = null
   private sockets = new Set<WebSocket>()
   private idleTimer: NodeJS.Timeout | null = null
+  private flushTimer: NodeJS.Timeout | null = null
   private spawnError: string | null = null
   private spawned = false
   private scrollback = ''
@@ -33,7 +34,22 @@ class ActiveTerminalSession {
     readonly id: string,
     private readonly workdir: string,
     private readonly onCleanup: (id: string) => void,
-  ) {}
+  ) {
+    const row = db
+      .prepare('SELECT terminal_scrollback FROM sessions WHERE id = ?')
+      .get(id) as { terminal_scrollback: string | null } | undefined
+    this.scrollback = row?.terminal_scrollback ?? ''
+  }
+
+  private scheduleFlush() {
+    if (this.flushTimer) clearTimeout(this.flushTimer)
+    this.flushTimer = setTimeout(() => this.flushScrollback(), 500)
+  }
+
+  private flushScrollback() {
+    if (this.flushTimer) { clearTimeout(this.flushTimer); this.flushTimer = null }
+    db.prepare('UPDATE sessions SET terminal_scrollback = ? WHERE id = ?').run(this.scrollback, this.id)
+  }
 
   private spawnPty(cols: number, rows: number) {
     const claudeBin = process.env.CLAUDE_BIN ?? 'claude'
@@ -74,10 +90,12 @@ class ActiveTerminalSession {
         this.scrollback = this.scrollback.slice(this.scrollback.length - MAX_SCROLLBACK_BYTES)
       }
       this.broadcast({ type: 'output', data })
+      this.scheduleFlush()
     })
 
     this.ptyProc.onExit(() => {
       this.ptyProc = null
+      this.flushScrollback()
       db.prepare('UPDATE sessions SET ended_at = ? WHERE id = ?').run(Date.now(), this.id)
       this.broadcast({ type: 'status', state: 'disconnected' })
       if (this.idleTimer) clearTimeout(this.idleTimer)
@@ -115,6 +133,7 @@ class ActiveTerminalSession {
   }
 
   kill() {
+    this.flushScrollback()
     db.prepare('UPDATE sessions SET ended_at = ? WHERE id = ?').run(Date.now(), this.id)
     if (this.ptyProc) {
       this.ptyProc.kill()
