@@ -58,7 +58,6 @@ cat > "$TMPDIR/.env" <<'DOT_ENV'
 ANTHROPIC_API_KEY=test-key-abc
 CLAUDE_BIN=/home/user/.local/bin/claude
 PORT=8888
-FRONTEND_ORIGIN=http://localhost:9999
 DOT_ENV
 
 read_env_var() {
@@ -82,7 +81,6 @@ ENV=$(cat "$TMPDIR/test.env")
 assert_contains     "ANTHROPIC_API_KEY written"  "ANTHROPIC_API_KEY=test-key-abc"              "$ENV"
 assert_contains     "CLAUDE_BIN written"         "CLAUDE_BIN=/home/user/.local/bin/claude"     "$ENV"
 assert_contains     "PORT written"               "PORT=8888"                                   "$ENV"
-assert_not_contains "FRONTEND_ORIGIN excluded"   "FRONTEND_ORIGIN"                             "$ENV"
 
 echo ""
 echo "=== Env file defaults (no .env) ==="

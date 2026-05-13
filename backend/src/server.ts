@@ -10,6 +10,7 @@ import { sessionRoutes } from './routes/sessions'
 import { sessionWsRoutes } from './ws/session'
 import { terminalWsRoutes } from './ws/terminal'
 import { settingsRoutes } from './routes/settings'
+import { initAccountCache } from './services/accountCache'
 
 // TODO: add bearer token auth — add @fastify/bearer-auth plugin here
 // and set token via DASHBOARD_TOKEN env var
@@ -20,7 +21,6 @@ const fastify = Fastify({ logger: true })
 async function start() {
   const PORT = Number(process.env.PORT ?? 9998)
   const HOST = process.env.HOST ?? '0.0.0.0'
-  const devOrigin = process.env.FRONTEND_ORIGIN
   await fastify.register(cors, {
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
     origin: (origin, cb) => {
@@ -29,7 +29,6 @@ async function start() {
         const { port } = new URL(origin)
         if (port === '9999' || port === String(PORT)) return cb(null, true)
       } catch { /* ignore malformed */ }
-      if (devOrigin && origin === devOrigin) return cb(null, true)
       cb(new Error('Not allowed by CORS'), false)
     },
   })
@@ -59,6 +58,8 @@ async function start() {
       return reply.sendFile('index.html')
     })
   }
+
+  await initAccountCache()
 
   try {
     await fastify.listen({ port: PORT, host: HOST })
