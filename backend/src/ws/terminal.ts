@@ -4,6 +4,7 @@ import * as path from 'path'
 import type { WebSocket } from 'ws'
 import type { FastifyInstance } from 'fastify'
 import { db } from '../db/schema'
+import { resolveBin } from '../utils/resolveBin'
 
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000
 
@@ -52,7 +53,7 @@ class ActiveTerminalSession {
   }
 
   private spawnPty(cols: number, rows: number) {
-    const claudeBin = process.env.CLAUDE_BIN ?? 'claude'
+    const claudeBin = resolveBin(process.env.CLAUDE_BIN?.trim() || 'claude')
     const bypassPermissions = getBypassPermissions()
     const args: string[] = []
     if (bypassPermissions) args.push('--dangerously-skip-permissions')
