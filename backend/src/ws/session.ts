@@ -20,6 +20,7 @@ interface StreamEvent {
   type: string
   subtype?: string
   session_id?: string
+  model?: string
   result?: string
   is_error?: boolean
   message?: {
@@ -31,14 +32,16 @@ interface StreamEvent {
 }
 
 interface ServerMessage {
-  type: 'output' | 'message' | 'status' | 'history' | 'tokens' | 'session_state' | 'permission_request'
+  type: 'output' | 'message' | 'status' | 'history' | 'tokens' | 'session_state' | 'permission_request' | 'model'
   data?: string
   role?: string
   content?: string
   state?: string
+  model?: string
   messages?: Array<{ role: string; content: string; created_at: number }>
   inputTokens?: number
   outputTokens?: number
+  contextTokens?: number
   totalTokens?: number
   workingTimeMs?: number
   permissions?: Array<{ tool: string; summary: string }>
@@ -201,6 +204,7 @@ class ActiveSession {
           if (event.type === 'system' && event.subtype === 'init') {
             const sid = event.session_id?.slice(0, 8) ?? '?'
             this.broadcast({ type: 'output', data: `[session ${sid}]\r\n` })
+            if (event.model) this.broadcast({ type: 'model', model: event.model })
             // Claude is now ready for input. Write the user message as if typed
             // in the terminal. Claude Code puts stdin in raw mode (no echo), so
             // this won't produce a duplicate line in the terminal output.
@@ -277,7 +281,10 @@ class ActiveSession {
               'UPDATE sessions SET total_tokens = total_tokens + ?, working_time_ms = working_time_ms + ? WHERE id = ?',
             ).run(inputTokens + outputTokens, elapsed, this.id)
             if (inputTokens > 0 || outputTokens > 0) {
-              this.broadcast({ type: 'tokens', inputTokens, outputTokens })
+              const contextTokens = (lastUsage?.input_tokens ?? 0)
+                + (lastUsage?.cache_read_input_tokens ?? 0)
+                + (lastUsage?.cache_creation_input_tokens ?? 0)
+              this.broadcast({ type: 'tokens', inputTokens, outputTokens, contextTokens })
             }
             const finalText = event.result ?? ''
             this.broadcast({ type: 'message', role: 'assistant', content: finalText })

@@ -33,9 +33,11 @@ export function useWebSocket(onOutput: (data: string) => void) {
             role?: string
             content?: string
             state?: string
+            model?: string
             messages?: Array<{ role: string; content: string; created_at: number }>
             inputTokens?: number
             outputTokens?: number
+            contextTokens?: number
             totalTokens?: number
             workingTimeMs?: number
             permissions?: Array<{ tool: string; summary: string }>
@@ -49,8 +51,10 @@ export function useWebSocket(onOutput: (data: string) => void) {
             })
           } else if (msg.type === 'status' && msg.state) {
             dispatch({ type: 'WS_STATE', timestamp: Date.now(), state: msg.state as 'running' | 'idle' | 'error' })
+          } else if (msg.type === 'model' && msg.model) {
+            dispatch({ type: 'MODEL_SET', model: msg.model })
           } else if (msg.type === 'tokens' && msg.inputTokens != null && msg.outputTokens != null) {
-            dispatch({ type: 'TOKENS_ADDED', inputTokens: msg.inputTokens, outputTokens: msg.outputTokens })
+            dispatch({ type: 'TOKENS_ADDED', inputTokens: msg.inputTokens, outputTokens: msg.outputTokens, contextTokens: msg.contextTokens })
           } else if (msg.type === 'session_state') {
             dispatch({ type: 'STATS_RESTORED', totalTokens: msg.totalTokens ?? 0, workingTimeMs: msg.workingTimeMs ?? 0 })
           } else if (msg.type === 'permission_request' && Array.isArray(msg.permissions)) {

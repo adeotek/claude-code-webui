@@ -96,7 +96,7 @@ export default function StatsStrip({ account, usage, activeSessions, loading }: 
           <Chip label="plan" value={formatSubscription(rl.subscriptionType)} valueClass="text-accent font-medium" />
         )}
 
-        {rl != null && (
+        {rl != null && !rl.isEnterprise && (
           <Chip
             label="5h"
             value={`${rl.fiveHourPct}%`}
@@ -105,7 +105,7 @@ export default function StatsStrip({ account, usage, activeSessions, loading }: 
           />
         )}
 
-        {rl != null && (
+        {rl != null && !rl.isEnterprise && (
           <Chip
             label="wk"
             value={`${rl.sevenDayPct}%`}

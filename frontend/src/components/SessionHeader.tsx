@@ -14,6 +14,12 @@ interface SessionHeaderProps {
   onRename?: (name: string) => Promise<void>
 }
 
+function formatContextWindow(tokens: number): string {
+  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(0)}M`
+  if (tokens >= 1_000) return `${(tokens / 1_000).toFixed(0)}K`
+  return String(tokens)
+}
+
 function formatCreatedAt(ts: number): string {
   const d = new Date(ts)
   const now = new Date()
@@ -147,7 +153,7 @@ export default function SessionHeader({
             </span>
           )}
           {state.model && (
-            <span className="text-accent text-xs font-medium hidden sm:block">{formatModelName(state.model)}</span>
+            <span className="text-accent text-xs font-medium">{formatModelName(state.model)}</span>
           )}
         </div>
       )}
@@ -162,6 +168,11 @@ export default function SessionHeader({
         {state.mode !== 'terminal' && (
           <StatChip label="tokens" value={formatTokens(totalTokens)} />
         )}
+        <StatChip
+          label="ctx"
+          value={`${state.contextPct}%/${formatContextWindow(state.contextWindow)}`}
+          valueClass={state.contextPct >= 80 ? 'text-status-red' : state.contextPct >= 50 ? 'text-yellow-400' : 'text-text-secondary'}
+        />
       </div>
 
       <div className="flex items-center gap-2 ml-auto">

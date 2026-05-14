@@ -179,6 +179,7 @@ export default function DashboardView() {
           onRename={handleRenameSession}
           sessionName={state.name}
           totalTokens={state.totalTokens}
+
           sessionStartedAt={activeSession?.started_at ?? null}
         />
         <TerminalSession />
@@ -202,6 +203,7 @@ export default function DashboardView() {
               onRename={handleRenameSession}
               sessionName={state.name}
               totalTokens={state.totalTokens}
+    
               sessionStartedAt={activeSession?.started_at ?? null}
             />
             <MessageList messages={state.messages} />

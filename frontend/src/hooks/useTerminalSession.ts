@@ -31,6 +31,8 @@ export function useTerminalSession(onOutput: (data: string) => void, onConnect?:
             type: string
             data?: string
             state?: string
+            contextPct?: number
+            contextWindow?: number
           }
           if (msg.type === 'output' && msg.data) {
             onOutput(msg.data)
@@ -42,6 +44,8 @@ export function useTerminalSession(onOutput: (data: string) => void, onConnect?:
             } else if (msg.state === 'disconnected' || msg.state === 'error') {
               dispatch({ type: 'WS_STATE', timestamp: Date.now(), state: 'disconnected' })
             }
+          } else if (msg.type === 'context' && msg.contextPct != null && msg.contextWindow != null) {
+            dispatch({ type: 'CONTEXT_UPDATED', contextPct: msg.contextPct, contextWindow: msg.contextWindow })
           }
         } catch {
           // ignore malformed frames

@@ -23,6 +23,9 @@ export interface SessionState {
   workingTimeMs: number       // cumulative ms spent in 'running' state
   runningStartedAt: number | null  // timestamp when current run period began
   totalTokens: number         // cumulative input+output tokens for this session
+  contextTokens: number       // input tokens from the most recent turn (chat mode)
+  contextPct: number          // context usage 0-100; set from API tokens (chat) or PTY parse (terminal)
+  contextWindow: number       // context window size in tokens (default 200 000)
   pendingPermissions: PermissionRequest[] | null
 }
 
@@ -35,7 +38,8 @@ type Action =
   | { type: 'HISTORY_LOADED'; messages: Message[] }
   | { type: 'MODEL_SET'; model: string }
   | { type: 'SESSION_RENAMED'; name: string | null }
-  | { type: 'TOKENS_ADDED'; inputTokens: number; outputTokens: number }
+  | { type: 'TOKENS_ADDED'; inputTokens: number; outputTokens: number; contextTokens?: number }
+  | { type: 'CONTEXT_UPDATED'; contextPct: number; contextWindow: number }
   | { type: 'STATS_RESTORED'; totalTokens: number; workingTimeMs: number }
   | { type: 'PERMISSION_REQUEST'; permissions: PermissionRequest[] }
   | { type: 'PERMISSION_CLEARED' }
@@ -51,17 +55,20 @@ export const initial: SessionState = {
   workingTimeMs: 0,
   runningStartedAt: null,
   totalTokens: 0,
+  contextTokens: 0,
+  contextPct: 0,
+  contextWindow: 200_000,
   pendingPermissions: null,
 }
 
 export function reducer(state: SessionState, action: Action): SessionState {
   switch (action.type) {
     case 'SESSION_CREATED':
-      return { ...state, sessionId: action.sessionId, workdir: action.workdir, name: action.name ?? null, mode: action.mode, messages: [], wsState: 'connecting', workingTimeMs: 0, runningStartedAt: null, pendingPermissions: null }
+      return { ...state, sessionId: action.sessionId, workdir: action.workdir, name: action.name ?? null, mode: action.mode, messages: [], wsState: 'connecting', workingTimeMs: 0, runningStartedAt: null, totalTokens: 0, contextTokens: 0, contextPct: 0, contextWindow: 200_000, pendingPermissions: null }
     case 'SESSION_CLEARED':
       return { ...initial }
     case 'RESUME_SESSION':
-      return { ...state, sessionId: action.id, workdir: action.workdir, name: action.name ?? null, mode: action.mode, messages: [], wsState: 'connecting', workingTimeMs: 0, runningStartedAt: null, totalTokens: 0, pendingPermissions: null }
+      return { ...state, sessionId: action.id, workdir: action.workdir, name: action.name ?? null, mode: action.mode, messages: [], wsState: 'connecting', workingTimeMs: 0, runningStartedAt: null, totalTokens: 0, contextTokens: 0, contextPct: 0, contextWindow: 200_000, pendingPermissions: null }
     case 'WS_STATE': {
       const prev = state.wsState
       const next = action.state
@@ -82,8 +89,20 @@ export function reducer(state: SessionState, action: Action): SessionState {
       return { ...state, model: action.model }
     case 'SESSION_RENAMED':
       return { ...state, name: action.name }
-    case 'TOKENS_ADDED':
-      return { ...state, totalTokens: state.totalTokens + action.inputTokens + action.outputTokens }
+    case 'TOKENS_ADDED': {
+      const contextTokens = action.contextTokens ?? state.contextTokens
+      const contextPct = contextTokens > 0 && state.contextWindow > 0
+        ? Math.round(contextTokens / state.contextWindow * 100)
+        : state.contextPct
+      return { ...state, totalTokens: state.totalTokens + action.inputTokens + action.outputTokens, contextTokens, contextPct }
+    }
+    case 'CONTEXT_UPDATED':
+      return {
+        ...state,
+        contextPct: action.contextPct,
+        contextWindow: action.contextWindow,
+        contextTokens: Math.round(action.contextPct / 100 * action.contextWindow),
+      }
     case 'STATS_RESTORED':
       return { ...state, totalTokens: action.totalTokens, workingTimeMs: action.workingTimeMs }
     case 'PERMISSION_REQUEST':
