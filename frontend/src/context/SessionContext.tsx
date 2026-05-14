@@ -28,6 +28,7 @@ export interface SessionState {
   contextWindow: number       // context window size in tokens (default 200 000)
   costUsd: number
   effortLevel: string | null
+  gitBranch: string | null
   pendingPermissions: PermissionRequest[] | null
 }
 
@@ -42,7 +43,8 @@ type Action =
   | { type: 'SESSION_RENAMED'; name: string | null }
   | { type: 'TOKENS_ADDED'; inputTokens: number; outputTokens: number; contextTokens?: number }
   | { type: 'CONTEXT_UPDATED'; contextPct: number; contextWindow: number }
-  | { type: 'STATS_RESTORED'; totalTokens: number; workingTimeMs: number }
+  | { type: 'STATS_RESTORED'; totalTokens: number; workingTimeMs: number; gitBranch?: string | null }
+  | { type: 'GIT_BRANCH_SET'; gitBranch: string | null }
   | { type: 'STATUSLINE_UPDATE'; contextPct: number; contextWindow: number; contextInputTokens: number; costUsd: number; model: string | null; effortLevel: string | null }
   | { type: 'PERMISSION_REQUEST'; permissions: PermissionRequest[] }
   | { type: 'PERMISSION_CLEARED' }
@@ -63,13 +65,14 @@ export const initial: SessionState = {
   contextWindow: 200_000,
   costUsd: 0,
   effortLevel: null,
+  gitBranch: null,
   pendingPermissions: null,
 }
 
 export function reducer(state: SessionState, action: Action): SessionState {
   switch (action.type) {
     case 'SESSION_CREATED':
-      return { ...state, sessionId: action.sessionId, workdir: action.workdir, name: action.name ?? null, mode: action.mode, messages: [], wsState: 'connecting', workingTimeMs: 0, runningStartedAt: null, totalTokens: 0, contextTokens: 0, contextPct: 0, contextWindow: 200_000, costUsd: 0, effortLevel: null, pendingPermissions: null }
+      return { ...state, sessionId: action.sessionId, workdir: action.workdir, name: action.name ?? null, mode: action.mode, messages: [], wsState: 'connecting', workingTimeMs: 0, runningStartedAt: null, totalTokens: 0, contextTokens: 0, contextPct: 0, contextWindow: 200_000, costUsd: 0, effortLevel: null, gitBranch: null, pendingPermissions: null }
     case 'SESSION_CLEARED':
       return { ...initial }
     case 'RESUME_SESSION':
@@ -109,7 +112,9 @@ export function reducer(state: SessionState, action: Action): SessionState {
         contextTokens: Math.round(action.contextPct / 100 * action.contextWindow),
       }
     case 'STATS_RESTORED':
-      return { ...state, totalTokens: action.totalTokens, workingTimeMs: action.workingTimeMs }
+      return { ...state, totalTokens: action.totalTokens, workingTimeMs: action.workingTimeMs, ...(action.gitBranch !== undefined ? { gitBranch: action.gitBranch } : {}) }
+    case 'GIT_BRANCH_SET':
+      return { ...state, gitBranch: action.gitBranch }
     case 'STATUSLINE_UPDATE':
       return {
         ...state,

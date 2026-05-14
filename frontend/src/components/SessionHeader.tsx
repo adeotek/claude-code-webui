@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, List, Square, Pencil } from 'lucide-react'
+import { Plus, List, Square, Pencil, GitBranch } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useSession } from '../context/SessionContext'
 import { formatModelName, formatTokens, formatDuration } from '../utils/format'
@@ -97,107 +97,121 @@ export default function SessionHeader({
   }
 
   return (
-    <div className="px-3 py-2 border-b border-border-subtle bg-bg-surface flex items-center gap-3 flex-shrink-0 flex-wrap">
-      {renaming ? (
-        <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-          <input
-            value={nameInput}
-            onChange={(e) => setNameInput(e.target.value)}
-            onKeyDown={onRenameKeyDown}
-            autoFocus
-            placeholder="Session name (optional)"
-            className="bg-bg-panel border border-accent rounded px-2 py-0.5 text-xs text-text-primary placeholder-text-dim focus:outline-none w-44"
-          />
-          <button
-            onClick={saveRename}
-            disabled={renameSaving}
-            className="text-xs text-accent hover:text-accent-hover disabled:opacity-40 transition-colors"
-          >
-            {renameSaving ? '…' : 'Save'}
-          </button>
-          <button
-            onClick={cancelRename}
-            className="text-xs text-text-dim hover:text-text-secondary transition-colors"
-          >
-            ✕
-          </button>
-          {renameError && <span className="text-status-red text-xs">{renameError}</span>}
-        </div>
-      ) : (
-        <div className="flex items-center gap-2 min-w-0">
-          {state.wsState === 'running' ? (
-            <div className="w-3 h-3 rounded-full border-2 border-status-green border-t-transparent animate-spin flex-shrink-0" />
-          ) : (
-            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-              state.wsState === 'idle'  ? 'bg-status-green' :
-              state.wsState === 'error' ? 'bg-status-red' : 'bg-text-dim'
-            }`} />
-          )}
-          {sessionName && (
-            <span className="text-text-primary text-xs font-medium truncate max-w-[160px]">
-              {sessionName}
-            </span>
-          )}
-          {onRename && !renaming && (
-            <button
-              onClick={startRename}
-              className="text-text-dim hover:text-accent transition-colors flex-shrink-0"
-              title="Rename session"
-            >
-              <Pencil size={11} />
-            </button>
-          )}
-          {state.workdir && (
-            <span className="text-text-secondary text-xs bg-bg-elevated border border-border-subtle px-2 py-0.5 rounded truncate max-w-xs">
-              {state.workdir}
-            </span>
-          )}
-          {state.model && (
-            <span className="text-accent text-xs font-medium">{formatModelName(state.model)}</span>
-          )}
-        </div>
-      )}
+    <div className="px-3 py-2 border-b border-border-subtle bg-bg-surface flex flex-col gap-1.5 flex-shrink-0">
+      {/* Row 1: status + workdir + git branch + action buttons */}
+      <div className="flex items-center gap-2">
+        {state.wsState === 'running' ? (
+          <div className="w-3 h-3 rounded-full border-2 border-status-green border-t-transparent animate-spin flex-shrink-0" />
+        ) : (
+          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+            state.wsState === 'idle'  ? 'bg-status-green' :
+            state.wsState === 'error' ? 'bg-status-red' : 'bg-text-dim'
+          }`} />
+        )}
+        {state.workdir && (
+          <span className="text-text-secondary text-xs bg-bg-elevated border border-border-subtle px-2 py-0.5 rounded truncate max-w-xs">
+            {state.workdir}
+          </span>
+        )}
+        {state.gitBranch && (
+          <span className="flex items-center gap-1 text-text-secondary text-xs bg-bg-elevated border border-border-subtle px-2 py-0.5 rounded flex-shrink-0">
+            <GitBranch size={10} />
+            {state.gitBranch}
+          </span>
+        )}
 
-      <div className="flex items-center gap-3 text-xs border-l border-border-subtle pl-3">
+        <div className="flex items-center gap-2 ml-auto">
+          <Link
+            to="/new"
+            onClick={(e) => { e.preventDefault(); onNewSession() }}
+            className="flex items-center gap-1.5 text-text-muted hover:text-accent text-xs bg-bg-elevated border border-border-subtle hover:border-accent px-2 py-1 rounded transition-colors"
+          >
+            <Plus size={11} />
+            New session
+          </Link>
+          <button
+            onClick={onStopSession}
+            className="flex items-center gap-1.5 text-text-muted hover:text-status-red text-xs bg-bg-elevated border border-border-subtle hover:border-status-red px-2 py-1 rounded transition-colors"
+          >
+            <Square size={11} />
+            Stop session
+          </button>
+          <button
+            onClick={onSessionsList}
+            className="flex items-center gap-1.5 text-text-muted hover:text-text-secondary text-xs bg-bg-elevated border border-border-subtle hover:border-border px-2 py-1 rounded transition-colors"
+          >
+            <List size={11} />
+            Sessions list
+          </button>
+        </div>
+      </div>
+
+      {/* Row 2: name/rename · Created · Model · Context [+ dur/tokens when active] */}
+      <div className="flex items-center gap-3 text-xs">
+        {renaming ? (
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <input
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              onKeyDown={onRenameKeyDown}
+              autoFocus
+              placeholder="Session name (optional)"
+              className="bg-bg-panel border border-accent rounded px-2 py-0.5 text-xs text-text-primary placeholder-text-dim focus:outline-none w-44"
+            />
+            <button
+              onClick={saveRename}
+              disabled={renameSaving}
+              className="text-xs text-accent hover:text-accent-hover disabled:opacity-40 transition-colors"
+            >
+              {renameSaving ? '…' : 'Save'}
+            </button>
+            <button
+              onClick={cancelRename}
+              className="text-xs text-text-dim hover:text-text-secondary transition-colors"
+            >
+              ✕
+            </button>
+            {renameError && <span className="text-status-red text-xs">{renameError}</span>}
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <span className="text-text-dim uppercase tracking-wider text-xs">name</span>
+            {sessionName && (
+              <span className="text-text-primary text-xs font-medium">
+                {sessionName}
+              </span>
+            )}
+            {onRename && (
+              <button
+                onClick={startRename}
+                className="text-text-dim hover:text-accent transition-colors"
+                title="Rename session"
+              >
+                <Pencil size={11} />
+              </button>
+            )}
+          </div>
+        )}
         {sessionStartedAt != null && (
           <StatChip label="created" value={formatCreatedAt(sessionStartedAt)} />
         )}
+        {state.model && (
+          <span className="text-accent text-xs font-medium">{formatModelName(state.model)}</span>
+        )}
+        <span className="flex items-center gap-1 text-xs">
+          <span className="text-text-dim uppercase tracking-wider">ctx</span>
+          <span className={`font-medium ${state.contextPct >= 80 ? 'text-status-red' : state.contextPct >= 50 ? 'text-yellow-400' : 'text-status-green'}`}>
+            {Math.round(state.contextPct)}%
+          </span>
+          <span className="text-text-dim font-medium">/</span>
+          <span className="font-medium text-accent">{formatContextWindow(state.contextWindow)}</span>
+        </span>
         {workingMs > 0 && state.mode !== 'terminal' && (
           <StatChip label="dur" value={formatDuration(workingMs)} valueClass="text-status-green" />
         )}
         {state.mode !== 'terminal' && (
           <StatChip label="tokens" value={formatTokens(totalTokens)} />
         )}
-        <StatChip
-          label="ctx"
-          value={`${state.contextPct}%/${formatContextWindow(state.contextWindow)}`}
-          valueClass={state.contextPct >= 80 ? 'text-status-red' : state.contextPct >= 50 ? 'text-yellow-400' : 'text-text-secondary'}
-        />
-      </div>
-
-      <div className="flex items-center gap-2 ml-auto">
-        <Link
-          to="/new"
-          onClick={(e) => { e.preventDefault(); onNewSession() }}
-          className="flex items-center gap-1.5 text-text-muted hover:text-accent text-xs bg-bg-elevated border border-border-subtle hover:border-accent px-2 py-1 rounded transition-colors"
-        >
-          <Plus size={11} />
-          New session
-        </Link>
-        <button
-          onClick={onStopSession}
-          className="flex items-center gap-1.5 text-text-muted hover:text-status-red text-xs bg-bg-elevated border border-border-subtle hover:border-status-red px-2 py-1 rounded transition-colors"
-        >
-          <Square size={11} />
-          Stop session
-        </button>
-        <button
-          onClick={onSessionsList}
-          className="flex items-center gap-1.5 text-text-muted hover:text-text-secondary text-xs bg-bg-elevated border border-border-subtle hover:border-border px-2 py-1 rounded transition-colors"
-        >
-          <List size={11} />
-          Sessions list
-        </button>
       </div>
     </div>
   )

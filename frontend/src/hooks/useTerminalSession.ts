@@ -33,6 +33,7 @@ export function useTerminalSession(onOutput: (data: string) => void, onConnect?:
             state?: string
             contextPct?: number
             contextWindow?: number
+            gitBranch?: string | null
             statuslineData?: {
               contextPct?: number | null
               contextWindowSize?: number | null
@@ -54,6 +55,8 @@ export function useTerminalSession(onOutput: (data: string) => void, onConnect?:
             }
           } else if (msg.type === 'context' && msg.contextPct != null && msg.contextWindow != null) {
             dispatch({ type: 'CONTEXT_UPDATED', contextPct: msg.contextPct, contextWindow: msg.contextWindow })
+          } else if (msg.type === 'git_branch') {
+            dispatch({ type: 'GIT_BRANCH_SET', gitBranch: msg.gitBranch ?? null })
           } else if (msg.type === 'statusline' && msg.statuslineData) {
             const d = msg.statuslineData
             dispatch({

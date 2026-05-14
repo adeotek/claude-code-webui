@@ -40,6 +40,7 @@ export function useWebSocket(onOutput: (data: string) => void) {
             contextTokens?: number
             totalTokens?: number
             workingTimeMs?: number
+            gitBranch?: string | null
             permissions?: Array<{ tool: string; summary: string }>
             statuslineData?: {
               contextPct?: number | null
@@ -64,7 +65,7 @@ export function useWebSocket(onOutput: (data: string) => void) {
           } else if (msg.type === 'tokens' && msg.inputTokens != null && msg.outputTokens != null) {
             dispatch({ type: 'TOKENS_ADDED', inputTokens: msg.inputTokens, outputTokens: msg.outputTokens, contextTokens: msg.contextTokens })
           } else if (msg.type === 'session_state') {
-            dispatch({ type: 'STATS_RESTORED', totalTokens: msg.totalTokens ?? 0, workingTimeMs: msg.workingTimeMs ?? 0 })
+            dispatch({ type: 'STATS_RESTORED', totalTokens: msg.totalTokens ?? 0, workingTimeMs: msg.workingTimeMs ?? 0, gitBranch: msg.gitBranch })
           } else if (msg.type === 'permission_request' && Array.isArray(msg.permissions)) {
             dispatch({ type: 'PERMISSION_REQUEST', permissions: msg.permissions })
           } else if (msg.type === 'history' && Array.isArray(msg.messages)) {

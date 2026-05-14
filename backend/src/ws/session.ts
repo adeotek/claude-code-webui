@@ -5,6 +5,7 @@ import type { WebSocket } from 'ws'
 import type { FastifyInstance } from 'fastify'
 import { db } from '../db/schema'
 import { resolveBin } from '../utils/resolveBin'
+import { getGitBranch } from '../utils/getGitBranch'
 
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000
 
@@ -62,6 +63,7 @@ interface ServerMessage {
   contextTokens?: number
   totalTokens?: number
   workingTimeMs?: number
+  gitBranch?: string | null
   permissions?: Array<{ tool: string; summary: string }>
   statuslineData?: StatuslinePayload
 }
@@ -469,6 +471,7 @@ export async function sessionWsRoutes(fastify: FastifyInstance) {
         type: 'session_state',
         totalTokens: row.total_tokens ?? 0,
         workingTimeMs: row.working_time_ms ?? 0,
+        gitBranch: getGitBranch(row.workdir),
       }))
 
       // Clear ended_at so resumed sessions show as active

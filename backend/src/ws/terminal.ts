@@ -7,6 +7,7 @@ import type { FastifyInstance } from 'fastify'
 import { db } from '../db/schema'
 import { resolveBin } from '../utils/resolveBin'
 import type { StatuslinePayload } from './session'
+import { getGitBranch } from '../utils/getGitBranch'
 
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000
 
@@ -286,6 +287,9 @@ export async function terminalWsRoutes(fastify: FastifyInstance) {
 
       const session = terminalManager.getOrCreate(id, row.workdir)
       session.attach(socket)
+
+      const gitBranch = getGitBranch(row.workdir)
+      socket.send(JSON.stringify({ type: 'git_branch', gitBranch }))
 
       socket.on('message', (raw: Buffer | string) => {
         try {
