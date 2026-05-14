@@ -33,6 +33,14 @@ export function useTerminalSession(onOutput: (data: string) => void, onConnect?:
             state?: string
             contextPct?: number
             contextWindow?: number
+            statuslineData?: {
+              contextPct?: number | null
+              contextWindowSize?: number | null
+              contextInputTokens?: number | null
+              costUsd?: number | null
+              model?: string | null
+              effortLevel?: string | null
+            }
           }
           if (msg.type === 'output' && msg.data) {
             onOutput(msg.data)
@@ -46,6 +54,17 @@ export function useTerminalSession(onOutput: (data: string) => void, onConnect?:
             }
           } else if (msg.type === 'context' && msg.contextPct != null && msg.contextWindow != null) {
             dispatch({ type: 'CONTEXT_UPDATED', contextPct: msg.contextPct, contextWindow: msg.contextWindow })
+          } else if (msg.type === 'statusline' && msg.statuslineData) {
+            const d = msg.statuslineData
+            dispatch({
+              type: 'STATUSLINE_UPDATE',
+              contextPct: d.contextPct ?? 0,
+              contextWindow: d.contextWindowSize ?? 200_000,
+              contextInputTokens: d.contextInputTokens ?? 0,
+              costUsd: d.costUsd ?? 0,
+              model: d.model ?? null,
+              effortLevel: d.effortLevel ?? null,
+            })
           }
         } catch {
           // ignore malformed frames

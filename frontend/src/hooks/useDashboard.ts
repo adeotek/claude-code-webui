@@ -12,6 +12,20 @@ export interface Session {
   is_active: boolean
   message_count: number
   mode: 'chat' | 'terminal'
+  cost_usd: number | null
+  api_duration_ms: number | null
+  lines_added: number | null
+  lines_removed: number | null
+  context_input_tokens: number | null
+  context_output_tokens: number | null
+  context_window_size: number | null
+  context_pct: number | null
+  effort_level: string | null
+  thinking_enabled: boolean | null
+  rate_limit_5h_pct: number | null
+  rate_limit_5h_resets_at: number | null
+  rate_limit_7d_pct: number | null
+  rate_limit_7d_resets_at: number | null
 }
 
 export interface DashboardData {

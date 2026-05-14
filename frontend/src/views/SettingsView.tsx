@@ -6,6 +6,7 @@ export default function SettingsView() {
   const [bypassPermissions, setBypassPermissions] = useState(true)
   const [sessionMode, setSessionMode] = useState<'chat' | 'terminal'>('chat')
   const [saved, setSaved] = useState(false)
+  const [statuslineUnmatched, setStatuslineUnmatched] = useState<'ignore' | 'create'>('ignore')
   const [settingsLoaded, setSettingsLoaded] = useState(false)
 
   useEffect(() => {
@@ -14,6 +15,7 @@ export default function SettingsView() {
       .then((data) => {
         setBypassPermissions(data.bypass_permissions !== 'false')
         setSessionMode(data.session_mode === 'terminal' ? 'terminal' : 'chat')
+        setStatuslineUnmatched(data.statusline_unmatched === 'create' ? 'create' : 'ignore')
         setSettingsLoaded(true)
       })
       .catch(() => setSettingsLoaded(true))
@@ -26,6 +28,7 @@ export default function SettingsView() {
       body: JSON.stringify({
         bypass_permissions: String(bypassPermissions),
         session_mode: sessionMode,
+        statusline_unmatched: statuslineUnmatched,
       }),
     }).catch(() => {})
 
@@ -86,6 +89,28 @@ export default function SettingsView() {
         >
           <span className={`w-2 h-2 rounded-full ${bypassPermissions ? 'bg-status-green' : 'bg-text-dim'}`} />
           {bypassPermissions ? 'Bypass permissions: on' : 'Bypass permissions: off'}
+        </button>
+      </div>
+
+      {/* Auto-track unregistered sessions toggle */}
+      <div className="space-y-2">
+        <label className="text-text-secondary text-xs uppercase tracking-widest block">
+          Statusline: Unregistered Sessions
+        </label>
+        <p className="text-text-muted text-xs">
+          When enabled, sessions started outside the webui (e.g. directly in a terminal) are automatically added to the session list when their statusline data arrives.
+        </p>
+        <button
+          onClick={() => setStatuslineUnmatched((v) => (v === 'ignore' ? 'create' : 'ignore'))}
+          disabled={!settingsLoaded}
+          className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded border transition-colors disabled:opacity-40 ${
+            statuslineUnmatched === 'create'
+              ? 'border-status-green text-status-green bg-status-green/10'
+              : 'border-border-subtle text-text-muted bg-bg-elevated'
+          }`}
+        >
+          <span className={`w-2 h-2 rounded-full ${statuslineUnmatched === 'create' ? 'bg-status-green' : 'bg-text-dim'}`} />
+          {statuslineUnmatched === 'create' ? 'Auto-track: on' : 'Auto-track: off'}
         </button>
       </div>
 

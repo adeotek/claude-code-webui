@@ -6,6 +6,7 @@ import type { WebSocket } from 'ws'
 import type { FastifyInstance } from 'fastify'
 import { db } from '../db/schema'
 import { resolveBin } from '../utils/resolveBin'
+import type { StatuslinePayload } from './session'
 
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000
 
@@ -21,6 +22,7 @@ type TerminalServerMessage =
   | { type: 'history'; data: string }
   | { type: 'status'; state: string }
   | { type: 'context'; contextPct: number; contextWindow: number }
+  | { type: 'statusline'; statuslineData: StatuslinePayload }
 
 const CONTEXT_WINDOW = 200_000
 const CONTEXT_POLL_INTERVAL_MS = 10_000
@@ -149,6 +151,10 @@ class ActiveTerminalSession {
     }
   }
 
+  broadcastStatusline(data: StatuslinePayload) {
+    this.broadcast({ type: 'statusline', statuslineData: data })
+  }
+
   kill() {
     this.flushScrollback()
     db.prepare('UPDATE sessions SET ended_at = ? WHERE id = ?').run(Date.now(), this.id)
@@ -243,6 +249,10 @@ class TerminalManager {
       }))
     }
     return this.sessions.get(id)!
+  }
+
+  get(id: string): ActiveTerminalSession | undefined {
+    return this.sessions.get(id)
   }
 
   kill(id: string) {

@@ -81,6 +81,17 @@ export default function SessionList({
                       ended
                     </span>
                   )}
+                  {session.context_pct != null && (
+                    <span className={`flex-shrink-0 px-1.5 py-0.5 text-xs rounded border ${
+                      session.context_pct >= 80
+                        ? 'bg-status-red/10 text-status-red border-status-red/20'
+                        : session.context_pct >= 50
+                          ? 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20'
+                          : 'bg-status-green/10 text-status-green border-status-green/20'
+                    }`}>
+                      {Math.round(session.context_pct)}%
+                    </span>
+                  )}
                 </div>
                 <div className="text-text-muted text-xs mt-0.5 truncate">{session.workdir}</div>
               </div>

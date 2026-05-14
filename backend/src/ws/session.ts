@@ -31,8 +31,26 @@ interface StreamEvent {
   }
 }
 
+export type StatuslinePayload = {
+  model: string | null
+  costUsd: number | null
+  apiDurationMs: number | null
+  linesAdded: number | null
+  linesRemoved: number | null
+  contextInputTokens: number | null
+  contextOutputTokens: number | null
+  contextWindowSize: number | null
+  contextPct: number | null
+  effortLevel: string | null
+  thinkingEnabled: boolean | null
+  rateLimits: {
+    fiveHour?: { pct: number; resetsAt: number }
+    sevenDay?: { pct: number; resetsAt: number }
+  } | null
+}
+
 interface ServerMessage {
-  type: 'output' | 'message' | 'status' | 'history' | 'tokens' | 'session_state' | 'permission_request' | 'model'
+  type: 'output' | 'message' | 'status' | 'history' | 'tokens' | 'session_state' | 'permission_request' | 'model' | 'statusline'
   data?: string
   role?: string
   content?: string
@@ -45,6 +63,7 @@ interface ServerMessage {
   totalTokens?: number
   workingTimeMs?: number
   permissions?: Array<{ tool: string; summary: string }>
+  statuslineData?: StatuslinePayload
 }
 
 interface ClientMessage {
@@ -360,6 +379,10 @@ class ActiveSession {
 
   writeToPty(data: string) {
     this.currentPty?.write(data)
+  }
+
+  broadcastStatusline(data: StatuslinePayload) {
+    this.broadcast({ type: 'statusline', statuslineData: data })
   }
 
   resizePty(cols: number, rows: number) {

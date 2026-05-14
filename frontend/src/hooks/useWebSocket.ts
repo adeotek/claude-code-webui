@@ -41,6 +41,14 @@ export function useWebSocket(onOutput: (data: string) => void) {
             totalTokens?: number
             workingTimeMs?: number
             permissions?: Array<{ tool: string; summary: string }>
+            statuslineData?: {
+              contextPct?: number | null
+              contextWindowSize?: number | null
+              contextInputTokens?: number | null
+              costUsd?: number | null
+              model?: string | null
+              effortLevel?: string | null
+            }
           }
           if (msg.type === 'output' && msg.data) {
             onOutput(msg.data)
@@ -67,6 +75,17 @@ export function useWebSocket(onOutput: (data: string) => void) {
               createdAt: m.created_at,
             }))
             dispatch({ type: 'HISTORY_LOADED', messages: history })
+          } else if (msg.type === 'statusline' && msg.statuslineData) {
+            const d = msg.statuslineData
+            dispatch({
+              type: 'STATUSLINE_UPDATE',
+              contextPct: d.contextPct ?? 0,
+              contextWindow: d.contextWindowSize ?? 200_000,
+              contextInputTokens: d.contextInputTokens ?? 0,
+              costUsd: d.costUsd ?? 0,
+              model: d.model ?? null,
+              effortLevel: d.effortLevel ?? null,
+            })
           }
         } catch {
           // ignore malformed frames

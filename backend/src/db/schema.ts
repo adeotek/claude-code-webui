@@ -77,6 +77,62 @@ function initDb(): Database.Database {
     db.prepare('ALTER TABLE sessions ADD COLUMN terminal_scrollback TEXT').run()
   }
 
+  if (!sessionCols.find((c) => c.name === 'cost_usd')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN cost_usd REAL').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'api_duration_ms')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN api_duration_ms INTEGER').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'lines_added')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN lines_added INTEGER').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'lines_removed')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN lines_removed INTEGER').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'context_input_tokens')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN context_input_tokens INTEGER').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'context_output_tokens')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN context_output_tokens INTEGER').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'context_window_size')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN context_window_size INTEGER').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'context_pct')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN context_pct REAL').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'effort_level')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN effort_level TEXT').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'thinking_enabled')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN thinking_enabled INTEGER').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'rate_limit_5h_pct')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN rate_limit_5h_pct REAL').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'rate_limit_5h_resets_at')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN rate_limit_5h_resets_at INTEGER').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'rate_limit_7d_pct')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN rate_limit_7d_pct REAL').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'rate_limit_7d_resets_at')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN rate_limit_7d_resets_at INTEGER').run()
+  }
+
   db.prepare(`
     CREATE TABLE IF NOT EXISTS settings (
       key   TEXT PRIMARY KEY,

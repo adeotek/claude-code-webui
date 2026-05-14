@@ -4,6 +4,7 @@ import { db } from '../db/schema'
 const DEFAULTS: Record<string, string> = {
   bypass_permissions: 'false',
   session_mode: 'terminal',
+  statusline_unmatched: 'ignore',
 }
 
 const ALLOWED = new Set(Object.keys(DEFAULTS))
