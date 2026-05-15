@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import HomeView from './views/HomeView'
+import NewSessionView from './views/NewSessionView'
 import SessionRoute from './views/SessionRoute'
 import SettingsView from './views/SettingsView'
 import SessionsTableView from './views/SessionsTableView'
@@ -14,7 +15,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<HomeView />} />
               <Route path="/session/:sessionId" element={<SessionRoute />} />
-              <Route path="/new" element={<Navigate to="/" state={{ openModal: true }} replace />} />
+              <Route path="/new" element={<NewSessionView />} />
               <Route path="/settings" element={<SettingsView />} />
               <Route path="/sessions-table" element={<SessionsTableView />} />
               <Route path="/account" element={<Navigate to="/" replace />} />

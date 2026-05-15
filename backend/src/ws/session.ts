@@ -448,7 +448,15 @@ export async function sessionWsRoutes(fastify: FastifyInstance) {
       const { id } = req.params
 
       const row = db.prepare('SELECT * FROM sessions WHERE id = ?').get(id) as
-        | { workdir: string; ended_at: number | null; claude_session_id: string | null; total_tokens: number; working_time_ms: number }
+        | {
+            workdir: string; ended_at: number | null; claude_session_id: string | null
+            total_tokens: number; working_time_ms: number; model: string | null
+            cost_usd: number | null; api_duration_ms: number | null
+            lines_added: number | null; lines_removed: number | null
+            context_input_tokens: number | null; context_output_tokens: number | null
+            context_window_size: number | null; context_pct: number | null
+            effort_level: string | null; thinking_enabled: number | null
+          }
         | undefined
 
       if (!row) {
@@ -473,6 +481,26 @@ export async function sessionWsRoutes(fastify: FastifyInstance) {
         totalTokens: row.total_tokens ?? 0,
         workingTimeMs: row.working_time_ms ?? 0,
         gitBranch: getGitBranch(row.workdir),
+      }))
+
+      // Replay last statusline data so reconnecting clients see up-to-date header stats
+      // (cost, API duration, effort, etc.) without waiting for the next statusline push.
+      socket.send(JSON.stringify({
+        type: 'statusline',
+        statuslineData: {
+          model: row.model ?? null,
+          costUsd: row.cost_usd ?? null,
+          apiDurationMs: row.api_duration_ms ?? null,
+          linesAdded: row.lines_added ?? null,
+          linesRemoved: row.lines_removed ?? null,
+          contextInputTokens: row.context_input_tokens ?? null,
+          contextOutputTokens: row.context_output_tokens ?? null,
+          contextWindowSize: row.context_window_size ?? null,
+          contextPct: row.context_pct ?? null,
+          effortLevel: row.effort_level ?? null,
+          thinkingEnabled: row.thinking_enabled !== null ? row.thinking_enabled === 1 : null,
+          rateLimits: null,
+        } satisfies StatuslinePayload,
       }))
 
       // Clear ended_at so resumed sessions show as active; stamp last_used
