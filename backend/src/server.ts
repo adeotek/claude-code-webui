@@ -15,7 +15,7 @@ import { statuslineRoutes } from './routes/statusline'
 import { setupStatusline } from './lib/setup-statusline'
 
 // TODO: add bearer token auth — add @fastify/bearer-auth plugin here
-// and set token via DASHBOARD_TOKEN env var
+// and set token via WEBUI_TOKEN env var
 // fastify.addHook('onRequest', async (request, reply) => { ... })
 
 const fastify = Fastify({ logger: true })

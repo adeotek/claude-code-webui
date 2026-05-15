@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TEMPLATE="$SCRIPT_DIR/claude-code-dashboard.service.template"
+TEMPLATE="$SCRIPT_DIR/claude-code-webui.service.template"
 
 PASS=0
 FAIL=0
@@ -40,13 +40,13 @@ trap 'rm -rf "$TMPDIR"' EXIT
 
 echo "=== Unit file template substitution ==="
 sed \
-  "s|__INSTALL_DIR__|/opt/claude-dashboard|g; s|__NODE_BIN__|/usr/bin/node|g" \
+  "s|__INSTALL_DIR__|/opt/claude-code-webui|g; s|__NODE_BIN__|/usr/bin/node|g" \
   "$TEMPLATE" > "$TMPDIR/test.service"
 UNIT=$(cat "$TMPDIR/test.service")
 
-assert_contains     "WorkingDirectory set"         "WorkingDirectory=/opt/claude-dashboard"                    "$UNIT"
-assert_contains     "ExecStart node path"           "ExecStart=/usr/bin/node /opt/claude-dashboard/backend/dist/server.js" "$UNIT"
-assert_contains     "EnvironmentFile uses %h"       "EnvironmentFile=%h/.config/systemd/user/claude-code-dashboard.env" "$UNIT"
+assert_contains     "WorkingDirectory set"         "WorkingDirectory=/opt/claude-code-webui"                    "$UNIT"
+assert_contains     "ExecStart node path"           "ExecStart=/usr/bin/node /opt/claude-code-webui/backend/dist/server.js" "$UNIT"
+assert_contains     "EnvironmentFile uses %h"       "EnvironmentFile=%h/.config/systemd/user/claude-code-webui.env" "$UNIT"
 assert_contains     "Restart=on-failure"            "Restart=on-failure"                                        "$UNIT"
 assert_contains     "WantedBy=default.target"       "WantedBy=default.target"                                   "$UNIT"
 assert_not_contains "no __INSTALL_DIR__ remaining"  "__INSTALL_DIR__"                                           "$UNIT"

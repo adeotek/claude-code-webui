@@ -2,8 +2,8 @@ import Database from 'better-sqlite3'
 import path from 'path'
 import fs from 'fs'
 
-const DB_DIR = process.env.DATA_DIR ?? path.join(process.env.HOME ?? '/root', '.claude', 'dashboard')
-const DB_PATH = path.join(DB_DIR, 'dashboard.db')
+const DB_DIR = process.env.DATA_DIR ?? path.join(process.env.HOME ?? '/root', '.claude', 'webui')
+const DB_PATH = path.join(DB_DIR, 'webui.db')
 
 function initDb(): Database.Database {
   fs.mkdirSync(DB_DIR, { recursive: true })

@@ -88,7 +88,7 @@ Two modes are supported per session, stored in the `sessions.mode` column:
 
 ### Frontend data flow
 
-- `useDashboard.ts` fetches account + usage + sessions in parallel with a 60s auto-refresh
+- `useHomeData.ts` fetches account + usage + sessions in parallel with a 60s auto-refresh
 - `SessionContext.tsx` holds the active session state (including `mode`); `useWebSocket.ts` manages the chat WS connection; `useTerminalSession.ts` manages the terminal WS connection
 - `TerminalSession.tsx` and `TerminalDrawer.tsx` are **never unmounted** — both are CSS-toggled (`display: none`) to preserve xterm scroll buffer across navigation
 
@@ -103,13 +103,13 @@ Two modes are supported per session, stored in the `sessions.mode` column:
 ## Docker
 
 ```bash
-docker build -t claude-code-dashboard .
+docker build -t claude-code-webui .
 docker-compose up
-# Dashboard at http://localhost:8080
+# Web UI at http://localhost:8080
 ```
 
 `docker-compose.yml` mounts `~/.claude` (read-write — required for session deletion) and `~/projects` (read-write) from the host.
 
 ## Systemd service (Linux)
 
-`scripts/install-service.sh` generates a systemd user unit from `scripts/claude-code-dashboard.service.template`, writes an env file to `~/.config/systemd/user/`, builds the project, and enables the service. Run with `--skip-build` to reuse existing `dist/` directories.
+`scripts/install-service.sh` generates a systemd user unit from `scripts/claude-code-webui.service.template`, writes an env file to `~/.config/systemd/user/`, builds the project, and enables the service. Run with `--skip-build` to reuse existing `dist/` directories.
