@@ -27,6 +27,30 @@ export async function sessionRoutes(fastify: FastifyInstance) {
     }
   })
 
+  fastify.get('/api/sessions/table', async (_req, reply) => {
+    const rows = db
+      .prepare(
+        `SELECT s.id, s.workdir, s.name, s.model, s.mode,
+                s.started_at, s.ended_at, s.claude_session_id,
+                CASE WHEN s.ended_at IS NULL THEN 1 ELSE 0 END as is_active,
+                s.total_tokens, s.working_time_ms,
+                COALESCE(mc.message_count, 0) as message_count,
+                s.cost_usd, s.api_duration_ms,
+                s.lines_added, s.lines_removed,
+                s.context_input_tokens, s.context_output_tokens,
+                s.context_window_size, s.context_pct,
+                s.effort_level, s.thinking_enabled,
+                s.rate_limit_5h_pct, s.rate_limit_5h_resets_at,
+                s.rate_limit_7d_pct, s.rate_limit_7d_resets_at
+         FROM sessions s
+         LEFT JOIN (SELECT session_id, COUNT(*) as message_count FROM messages GROUP BY session_id) mc
+           ON mc.session_id = s.id
+         ORDER BY s.started_at DESC`,
+      )
+      .all()
+    return reply.send(rows)
+  })
+
   fastify.get<{ Params: { id: string } }>('/api/sessions/:id', async (req, reply) => {
     const { id } = req.params
     const row = db

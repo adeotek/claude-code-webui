@@ -71,6 +71,27 @@ export async function statuslineRoutes(fastify: FastifyInstance) {
         .get(sessionId) as { id: string; mode: string; name: string | null } | undefined
 
       if (!dbRow) {
+        // Fallback: find an active webui session with a matching workdir that hasn't been
+        // linked to a Claude session yet. This covers the first-response race where
+        // claude_session_id hasn't been persisted to the DB before the statusline fires.
+        // Use RTRIM to normalize trailing slashes on both sides (DB may store with slash,
+        // statusline payload omits it, or vice versa).
+        const normalizedCwd = cwd.replace(/\/+$/, '')
+        const candidate = db
+          .prepare(
+            `SELECT id, mode, name FROM sessions
+             WHERE RTRIM(workdir, '/') = ? AND claude_session_id IS NULL
+             ORDER BY COALESCE(last_used, started_at) DESC LIMIT 1`,
+          )
+          .get(normalizedCwd) as { id: string; mode: string; name: string | null } | undefined
+
+        if (candidate) {
+          db.prepare('UPDATE sessions SET claude_session_id = ? WHERE id = ?').run(sessionId, candidate.id)
+          dbRow = candidate
+        }
+      }
+
+      if (!dbRow) {
         // Read the statusline_unmatched setting
         const settingRow = db
           .prepare('SELECT value FROM settings WHERE key = ?')

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Plus, List, Square, Pencil, GitBranch } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useSession } from '../context/SessionContext'
-import { formatModelName, formatTokens, formatDuration } from '../utils/format'
+import { formatModelName, formatTokens, formatDuration, formatCost } from '../utils/format'
 
 interface SessionHeaderProps {
   onNewSession: () => void
@@ -196,7 +196,10 @@ export default function SessionHeader({
           <StatChip label="created" value={formatCreatedAt(sessionStartedAt)} />
         )}
         {state.model && (
-          <span className="text-accent text-xs font-medium">{formatModelName(state.model)}</span>
+          <span className="flex items-center gap-1 text-xs">
+            <span className="text-text-dim uppercase tracking-wider">model</span>
+            <span className="text-accent font-medium">{formatModelName(state.model)}</span>
+          </span>
         )}
         <span className="flex items-center gap-1 text-xs">
           <span className="text-text-dim uppercase tracking-wider">ctx</span>
@@ -211,6 +214,29 @@ export default function SessionHeader({
         )}
         {state.mode !== 'terminal' && (
           <StatChip label="tokens" value={formatTokens(totalTokens)} />
+        )}
+        {state.costUsd > 0 && (
+          <StatChip label="cost" value={formatCost(state.costUsd)} />
+        )}
+        {state.apiDurationMs != null && (
+          <StatChip label="api" value={formatDuration(state.apiDurationMs)} />
+        )}
+        {state.statuslineTokens != null && state.statuslineTokens > 0 && (
+          <StatChip label="ctx tokens" value={formatTokens(state.statuslineTokens)} />
+        )}
+        {state.effortLevel != null && (
+          <StatChip label="effort" value={state.effortLevel} />
+        )}
+        {state.thinkingEnabled != null && (
+          <StatChip label="thinking" value={state.thinkingEnabled ? 'on' : 'off'} />
+        )}
+        {state.linesAdded != null && state.linesRemoved != null && (
+          <span className="flex items-center gap-1 text-xs">
+            <span className="text-text-dim uppercase tracking-wider">lines</span>
+            <span className="font-medium text-status-green">+{state.linesAdded}</span>
+            <span className="text-text-dim">/</span>
+            <span className="font-medium text-status-red">-{state.linesRemoved}</span>
+          </span>
         )}
       </div>
     </div>

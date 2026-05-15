@@ -474,10 +474,8 @@ export async function sessionWsRoutes(fastify: FastifyInstance) {
         gitBranch: getGitBranch(row.workdir),
       }))
 
-      // Clear ended_at so resumed sessions show as active
-      if (row.ended_at !== null) {
-        db.prepare('UPDATE sessions SET ended_at = NULL WHERE id = ?').run(id)
-      }
+      // Clear ended_at so resumed sessions show as active; stamp last_used
+      db.prepare('UPDATE sessions SET last_used = ?, ended_at = NULL WHERE id = ?').run(Date.now(), id)
 
       const session = sessionManager.getOrCreate(id, row.workdir, row.claude_session_id ?? null)
       session.attach(socket)

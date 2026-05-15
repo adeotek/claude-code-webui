@@ -37,17 +37,20 @@ export default function SettingsView() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-md">
-      <NavLink
-        to="/"
-        className="inline-flex items-center gap-1.5 text-xs text-accent hover:text-accent-hover transition-colors"
-      >
-        <ArrowLeft size={13} strokeWidth={1.5} />
-        Back to Dashboard
-      </NavLink>
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-border-subtle bg-bg-surface flex-shrink-0">
+        <span className="text-text-primary text-xs font-medium uppercase tracking-widest">Settings</span>
+        <NavLink
+          to="/"
+          className="flex items-center gap-1.5 text-text-muted hover:text-text-primary text-xs transition-colors ml-auto"
+        >
+          <ArrowLeft size={14} />
+          Back
+        </NavLink>
+      </div>
 
-      <h2 className="text-text-secondary text-xs uppercase tracking-widest">Settings</h2>
-
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-md">
       {/* Session mode toggle */}
       <div className="space-y-2">
         <label className="text-text-secondary text-xs uppercase tracking-widest block">
@@ -121,6 +124,7 @@ export default function SettingsView() {
         <Save size={14} />
         {saved ? 'Saved!' : 'Save'}
       </button>
+      </div>
     </div>
   )
 }

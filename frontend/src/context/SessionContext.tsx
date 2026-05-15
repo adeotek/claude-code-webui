@@ -27,7 +27,12 @@ export interface SessionState {
   contextPct: number          // context usage 0-100; set from API tokens (chat) or PTY parse (terminal)
   contextWindow: number       // context window size in tokens (default 200 000)
   costUsd: number
+  apiDurationMs: number | null
   effortLevel: string | null
+  thinkingEnabled: boolean | null
+  statuslineTokens: number | null  // context_input_tokens + context_output_tokens from statusline
+  linesAdded: number | null
+  linesRemoved: number | null
   gitBranch: string | null
   pendingPermissions: PermissionRequest[] | null
 }
@@ -45,7 +50,7 @@ type Action =
   | { type: 'CONTEXT_UPDATED'; contextPct: number; contextWindow: number }
   | { type: 'STATS_RESTORED'; totalTokens: number; workingTimeMs: number; gitBranch?: string | null }
   | { type: 'GIT_BRANCH_SET'; gitBranch: string | null }
-  | { type: 'STATUSLINE_UPDATE'; contextPct: number; contextWindow: number; contextInputTokens: number; costUsd: number; model: string | null; effortLevel: string | null }
+  | { type: 'STATUSLINE_UPDATE'; contextPct: number; contextWindow: number; contextInputTokens: number; contextOutputTokens: number; costUsd: number; apiDurationMs: number | null; effortLevel: string | null; thinkingEnabled: boolean | null; linesAdded: number | null; linesRemoved: number | null; model: string | null }
   | { type: 'PERMISSION_REQUEST'; permissions: PermissionRequest[] }
   | { type: 'PERMISSION_CLEARED' }
 
@@ -64,7 +69,12 @@ export const initial: SessionState = {
   contextPct: 0,
   contextWindow: 200_000,
   costUsd: 0,
+  apiDurationMs: null,
   effortLevel: null,
+  thinkingEnabled: null,
+  statuslineTokens: null,
+  linesAdded: null,
+  linesRemoved: null,
   gitBranch: null,
   pendingPermissions: null,
 }
@@ -72,7 +82,7 @@ export const initial: SessionState = {
 export function reducer(state: SessionState, action: Action): SessionState {
   switch (action.type) {
     case 'SESSION_CREATED':
-      return { ...state, sessionId: action.sessionId, workdir: action.workdir, name: action.name ?? null, mode: action.mode, messages: [], wsState: 'connecting', workingTimeMs: 0, runningStartedAt: null, totalTokens: 0, contextTokens: 0, contextPct: 0, contextWindow: 200_000, costUsd: 0, effortLevel: null, gitBranch: null, pendingPermissions: null }
+      return { ...state, sessionId: action.sessionId, workdir: action.workdir, name: action.name ?? null, mode: action.mode, messages: [], wsState: 'connecting', workingTimeMs: 0, runningStartedAt: null, totalTokens: 0, contextTokens: 0, contextPct: 0, contextWindow: 200_000, costUsd: 0, apiDurationMs: null, effortLevel: null, thinkingEnabled: null, statuslineTokens: null, linesAdded: null, linesRemoved: null, gitBranch: null, pendingPermissions: null }
     case 'SESSION_CLEARED':
       return { ...initial }
     case 'RESUME_SESSION':
@@ -122,7 +132,12 @@ export function reducer(state: SessionState, action: Action): SessionState {
         contextWindow: action.contextWindow,
         contextTokens: Math.round(action.contextPct / 100 * action.contextWindow),
         costUsd: action.costUsd,
+        apiDurationMs: action.apiDurationMs,
         effortLevel: action.effortLevel,
+        thinkingEnabled: action.thinkingEnabled,
+        statuslineTokens: action.contextInputTokens + action.contextOutputTokens,
+        linesAdded: action.linesAdded,
+        linesRemoved: action.linesRemoved,
         ...(action.model != null ? { model: action.model } : {}),
       }
     case 'PERMISSION_REQUEST':

@@ -133,6 +133,10 @@ function initDb(): Database.Database {
     db.prepare('ALTER TABLE sessions ADD COLUMN rate_limit_7d_resets_at INTEGER').run()
   }
 
+  if (!sessionCols.find((c) => c.name === 'last_used')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN last_used INTEGER').run()
+  }
+
   db.prepare(`
     CREATE TABLE IF NOT EXISTS settings (
       key   TEXT PRIMARY KEY,

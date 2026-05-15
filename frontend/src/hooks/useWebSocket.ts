@@ -46,9 +46,14 @@ export function useWebSocket(onOutput: (data: string) => void) {
               contextPct?: number | null
               contextWindowSize?: number | null
               contextInputTokens?: number | null
+              contextOutputTokens?: number | null
               costUsd?: number | null
+              apiDurationMs?: number | null
               model?: string | null
               effortLevel?: string | null
+              thinkingEnabled?: boolean | null
+              linesAdded?: number | null
+              linesRemoved?: number | null
             }
           }
           if (msg.type === 'output' && msg.data) {
@@ -83,9 +88,14 @@ export function useWebSocket(onOutput: (data: string) => void) {
               contextPct: d.contextPct ?? 0,
               contextWindow: d.contextWindowSize ?? 200_000,
               contextInputTokens: d.contextInputTokens ?? 0,
+              contextOutputTokens: d.contextOutputTokens ?? 0,
               costUsd: d.costUsd ?? 0,
+              apiDurationMs: d.apiDurationMs ?? null,
               model: d.model ?? null,
               effortLevel: d.effortLevel ?? null,
+              thinkingEnabled: d.thinkingEnabled ?? null,
+              linesAdded: d.linesAdded ?? null,
+              linesRemoved: d.linesRemoved ?? null,
             })
           }
         } catch {

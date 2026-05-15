@@ -42,6 +42,14 @@ export function formatRelativeTime(ts: number): string {
   return `${diffMo} month${diffMo === 1 ? '' : 's'} ago`
 }
 
+export function formatCost(usd: number): string {
+  if (usd === 0) return '$0.00'
+  if (usd < 0.001) return `$${usd.toFixed(5)}`
+  if (usd < 0.01) return `$${usd.toFixed(4)}`
+  if (usd < 1) return `$${usd.toFixed(3)}`
+  return `$${usd.toFixed(2)}`
+}
+
 export function lastSegment(path: string): string {
   const trimmed = path.replace(/\/$/, '')
   const idx = trimmed.lastIndexOf('/')

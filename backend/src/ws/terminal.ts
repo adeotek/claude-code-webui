@@ -183,6 +183,9 @@ class ActiveTerminalSession {
       const sessFile = path.join(os.homedir(), '.claude', 'sessions', `${this.ptyPid}.json`)
       const sessJson = JSON.parse(fs.readFileSync(sessFile, 'utf8')) as { sessionId: string; cwd?: string }
       const claudeSessionId = sessJson.sessionId
+      // Persist so the statusline route can match this session by claude_session_id
+      db.prepare('UPDATE sessions SET claude_session_id = ? WHERE id = ? AND claude_session_id IS NULL')
+        .run(claudeSessionId, this.id)
       const cwd = sessJson.cwd ?? this.workdir
 
       const absCwd = cwd.startsWith('~') ? path.join(os.homedir(), cwd.slice(1)) : cwd
@@ -281,9 +284,8 @@ export async function terminalWsRoutes(fastify: FastifyInstance) {
         return
       }
 
-      if (row.ended_at !== null) {
-        db.prepare('UPDATE sessions SET ended_at = NULL WHERE id = ?').run(id)
-      }
+      // Clear ended_at so resumed sessions show as active; stamp last_used
+      db.prepare('UPDATE sessions SET last_used = ?, ended_at = NULL WHERE id = ?').run(Date.now(), id)
 
       const session = terminalManager.getOrCreate(id, row.workdir)
       session.attach(socket)

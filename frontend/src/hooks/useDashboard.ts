@@ -26,6 +26,7 @@ export interface Session {
   rate_limit_5h_resets_at: number | null
   rate_limit_7d_pct: number | null
   rate_limit_7d_resets_at: number | null
+  last_used: number | null
 }
 
 export interface DashboardData {
