@@ -31,7 +31,7 @@ export async function sessionRoutes(fastify: FastifyInstance) {
     const rows = db
       .prepare(
         `SELECT s.id, s.workdir, s.name, s.model, s.mode,
-                s.started_at, s.ended_at, s.claude_session_id,
+                s.started_at, s.last_used, s.ended_at, s.claude_session_id,
                 CASE WHEN s.ended_at IS NULL THEN 1 ELSE 0 END as is_active,
                 s.total_tokens, s.working_time_ms,
                 COALESCE(mc.message_count, 0) as message_count,
@@ -96,9 +96,10 @@ export async function sessionRoutes(fastify: FastifyInstance) {
     const mode = modeRow?.value === 'terminal' ? 'terminal' : 'chat'
 
     const id = randomUUID()
+    const now = Date.now()
     db.prepare(
-      'INSERT INTO sessions (id, workdir, name, mode, started_at) VALUES (?, ?, ?, ?, ?)',
-    ).run(id, workdir, name?.trim() || null, mode, Date.now())
+      'INSERT INTO sessions (id, workdir, name, mode, started_at, last_used) VALUES (?, ?, ?, ?, ?, ?)',
+    ).run(id, workdir, name?.trim() || null, mode, now, now)
 
     return reply.status(201).send({ sessionId: id })
   })
@@ -156,7 +157,7 @@ export async function sessionRoutes(fastify: FastifyInstance) {
       const absWorkdir = session.workdir.startsWith('~')
         ? path.join(os.homedir(), session.workdir.slice(1))
         : session.workdir
-      const encoded = absWorkdir.replace(/[/.]/g, '-')
+      const encoded = absWorkdir.replace(/\//g, '-')
       const projectDir = path.join(os.homedir(), '.claude', 'projects', encoded)
       const base = path.join(projectDir, session.claude_session_id)
       try { fs.rmSync(`${base}.jsonl`) } catch { /* already gone */ }

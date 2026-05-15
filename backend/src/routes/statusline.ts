@@ -104,10 +104,11 @@ export async function statuslineRoutes(fastify: FastifyInstance) {
 
         // Auto-create a new session row
         const newId = randomUUID()
+        const now = Date.now()
         db.prepare(
-          `INSERT INTO sessions (id, workdir, name, mode, started_at, claude_session_id, model)
-           VALUES (?, ?, ?, 'terminal', ?, ?, ?)`,
-        ).run(newId, cwd, sessionName, Date.now(), sessionId, modelName)
+          `INSERT INTO sessions (id, workdir, name, mode, started_at, last_used, claude_session_id, model)
+           VALUES (?, ?, ?, 'terminal', ?, ?, ?, ?)`,
+        ).run(newId, cwd, sessionName, now, now, sessionId, modelName)
 
         dbRow = { id: newId, mode: 'terminal', name: sessionName }
       }

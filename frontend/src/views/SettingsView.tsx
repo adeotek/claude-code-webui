@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ArrowLeft, Save } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
@@ -6,8 +6,13 @@ export default function SettingsView() {
   const [bypassPermissions, setBypassPermissions] = useState(true)
   const [sessionMode, setSessionMode] = useState<'chat' | 'terminal'>('chat')
   const [saved, setSaved] = useState(false)
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [statuslineUnmatched, setStatuslineUnmatched] = useState<'ignore' | 'create'>('ignore')
   const [settingsLoaded, setSettingsLoaded] = useState(false)
+
+  useEffect(() => {
+    return () => { if (savedTimerRef.current) clearTimeout(savedTimerRef.current) }
+  }, [])
 
   useEffect(() => {
     fetch('/api/settings')
@@ -33,7 +38,8 @@ export default function SettingsView() {
     }).catch(() => {})
 
     setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+    savedTimerRef.current = setTimeout(() => setSaved(false), 2000)
   }
 
   return (

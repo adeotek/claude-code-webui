@@ -37,6 +37,7 @@ class ActiveTerminalSession {
   private sockets = new Set<WebSocket>()
   private idleTimer: NodeJS.Timeout | null = null
   private flushTimer: NodeJS.Timeout | null = null
+  private contextPollInitTimer: NodeJS.Timeout | null = null
   private contextPollTimer: NodeJS.Timeout | null = null
   private spawnError: string | null = null
   private spawned = false
@@ -46,6 +47,7 @@ class ActiveTerminalSession {
   constructor(
     readonly id: string,
     private readonly workdir: string,
+    private readonly resumeSessionId: string | null,
     private readonly onCleanup: (id: string) => void,
   ) {
     const row = db
@@ -68,6 +70,14 @@ class ActiveTerminalSession {
     const claudeBin = resolveBin(process.env.CLAUDE_BIN?.trim() || 'claude')
     const bypassPermissions = getBypassPermissions()
     const args: string[] = []
+    if (this.resumeSessionId) {
+      const absWorkdir = this.workdir.startsWith('~')
+        ? path.join(os.homedir(), this.workdir.slice(1))
+        : this.workdir
+      const encoded = absWorkdir.replace(/\//g, '-')
+      const jsonlPath = path.join(os.homedir(), '.claude', 'projects', encoded, `${this.resumeSessionId}.jsonl`)
+      if (fs.existsSync(jsonlPath)) args.push('--resume', this.resumeSessionId)
+    }
     if (bypassPermissions) args.push('--dangerously-skip-permissions')
 
     const resolvedCwd = this.workdir.startsWith('~')
@@ -114,6 +124,7 @@ class ActiveTerminalSession {
       db.prepare('UPDATE sessions SET ended_at = ? WHERE id = ?').run(Date.now(), this.id)
       this.broadcast({ type: 'status', state: 'disconnected' })
       if (this.idleTimer) clearTimeout(this.idleTimer)
+      if (this.contextPollInitTimer) { clearTimeout(this.contextPollInitTimer); this.contextPollInitTimer = null }
       if (this.contextPollTimer) { clearInterval(this.contextPollTimer); this.contextPollTimer = null }
       this.onCleanup(this.id)
       // Close sockets so the frontend reconnect loop fires and spawns a fresh PTY.
@@ -164,6 +175,7 @@ class ActiveTerminalSession {
       this.ptyProc = null
     }
     if (this.idleTimer) clearTimeout(this.idleTimer)
+    if (this.contextPollInitTimer) { clearTimeout(this.contextPollInitTimer); this.contextPollInitTimer = null }
     if (this.contextPollTimer) { clearInterval(this.contextPollTimer); this.contextPollTimer = null }
     this.broadcast({ type: 'status', state: 'disconnected' })
     for (const ws of this.sockets) ws.close()
@@ -171,7 +183,8 @@ class ActiveTerminalSession {
   }
 
   private startContextPolling() {
-    setTimeout(() => {
+    this.contextPollInitTimer = setTimeout(() => {
+      this.contextPollInitTimer = null
       this.pollContext()
       this.contextPollTimer = setInterval(() => this.pollContext(), CONTEXT_POLL_INTERVAL_MS)
     }, CONTEXT_POLL_INITIAL_DELAY_MS)
@@ -189,7 +202,7 @@ class ActiveTerminalSession {
       const cwd = sessJson.cwd ?? this.workdir
 
       const absCwd = cwd.startsWith('~') ? path.join(os.homedir(), cwd.slice(1)) : cwd
-      const encoded = absCwd.replace(/[/.]/g, '-')
+      const encoded = absCwd.replace(/\//g, '-')
       const jsonlPath = path.join(os.homedir(), '.claude', 'projects', encoded, `${claudeSessionId}.jsonl`)
 
       // Read last ~20 KB from the end to find the most recent usage entry
@@ -246,9 +259,9 @@ class ActiveTerminalSession {
 class TerminalManager {
   private sessions = new Map<string, ActiveTerminalSession>()
 
-  getOrCreate(id: string, workdir: string): ActiveTerminalSession {
+  getOrCreate(id: string, workdir: string, resumeSessionId: string | null = null): ActiveTerminalSession {
     if (!this.sessions.has(id)) {
-      this.sessions.set(id, new ActiveTerminalSession(id, workdir, (cleanupId) => {
+      this.sessions.set(id, new ActiveTerminalSession(id, workdir, resumeSessionId, (cleanupId) => {
         this.sessions.delete(cleanupId)
       }))
     }
@@ -274,8 +287,8 @@ export async function terminalWsRoutes(fastify: FastifyInstance) {
     (socket, req) => {
       const { id } = req.params
 
-      const row = db.prepare('SELECT workdir, ended_at FROM sessions WHERE id = ?').get(id) as
-        | { workdir: string; ended_at: number | null }
+      const row = db.prepare('SELECT workdir, ended_at, claude_session_id, context_input_tokens, context_output_tokens FROM sessions WHERE id = ?').get(id) as
+        | { workdir: string; ended_at: number | null; claude_session_id: string | null; context_input_tokens: number | null; context_output_tokens: number | null }
         | undefined
 
       if (!row) {
@@ -284,14 +297,27 @@ export async function terminalWsRoutes(fastify: FastifyInstance) {
         return
       }
 
-      // Clear ended_at so resumed sessions show as active; stamp last_used
-      db.prepare('UPDATE sessions SET last_used = ?, ended_at = NULL WHERE id = ?').run(Date.now(), id)
+      // Clear ended_at so resumed sessions show as active; stamp last_used.
+      // If the session was previously stopped (ended_at set), also clear claude_session_id so
+      // pollContext() can write the new one once the fresh PTY starts. We capture the old value
+      // first and pass it as --resume so Claude picks up the conversation from disk.
+      const resumeSessionId = row.ended_at !== null ? row.claude_session_id : null
+      if (row.ended_at !== null) {
+        db.prepare('UPDATE sessions SET last_used = ?, ended_at = NULL, claude_session_id = NULL WHERE id = ?').run(Date.now(), id)
+      } else {
+        db.prepare('UPDATE sessions SET last_used = ?, ended_at = NULL WHERE id = ?').run(Date.now(), id)
+      }
 
-      const session = terminalManager.getOrCreate(id, row.workdir)
+      const session = terminalManager.getOrCreate(id, row.workdir, resumeSessionId)
       session.attach(socket)
 
       const gitBranch = getGitBranch(row.workdir)
       socket.send(JSON.stringify({ type: 'git_branch', gitBranch }))
+      socket.send(JSON.stringify({
+        type: 'session_state',
+        contextInputTokens: row.context_input_tokens ?? 0,
+        contextOutputTokens: row.context_output_tokens ?? 0,
+      }))
 
       socket.on('message', (raw: Buffer | string) => {
         try {

@@ -136,6 +136,13 @@ function initDb(): Database.Database {
   if (!sessionCols.find((c) => c.name === 'last_used')) {
     db.prepare('ALTER TABLE sessions ADD COLUMN last_used INTEGER').run()
   }
+  // Back-fill last_used for rows that predate the column — use started_at as a reasonable default.
+  db.prepare('UPDATE sessions SET last_used = started_at WHERE last_used IS NULL').run()
+
+  // On startup, mark any sessions that were still "active" (ended_at NULL) as ended now.
+  // PTY processes don't survive a server restart, so leaving ended_at NULL would make
+  // them show as active in the UI forever.
+  db.prepare('UPDATE sessions SET ended_at = ? WHERE ended_at IS NULL').run(Date.now())
 
   db.prepare(`
     CREATE TABLE IF NOT EXISTS settings (

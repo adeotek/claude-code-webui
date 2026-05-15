@@ -221,7 +221,7 @@ export default function SessionHeader({
         {state.apiDurationMs != null && (
           <StatChip label="api" value={formatDuration(state.apiDurationMs)} />
         )}
-        {state.statuslineTokens != null && state.statuslineTokens > 0 && (
+        {state.statuslineTokens != null && (
           <StatChip label="ctx tokens" value={formatTokens(state.statuslineTokens)} />
         )}
         {state.effortLevel != null && (

@@ -48,7 +48,7 @@ type Action =
   | { type: 'SESSION_RENAMED'; name: string | null }
   | { type: 'TOKENS_ADDED'; inputTokens: number; outputTokens: number; contextTokens?: number }
   | { type: 'CONTEXT_UPDATED'; contextPct: number; contextWindow: number }
-  | { type: 'STATS_RESTORED'; totalTokens: number; workingTimeMs: number; gitBranch?: string | null }
+  | { type: 'STATS_RESTORED'; totalTokens: number; workingTimeMs: number; gitBranch?: string | null; statuslineTokens?: number }
   | { type: 'GIT_BRANCH_SET'; gitBranch: string | null }
   | { type: 'STATUSLINE_UPDATE'; contextPct: number; contextWindow: number; contextInputTokens: number; contextOutputTokens: number; costUsd: number; apiDurationMs: number | null; effortLevel: string | null; thinkingEnabled: boolean | null; linesAdded: number | null; linesRemoved: number | null; model: string | null }
   | { type: 'PERMISSION_REQUEST'; permissions: PermissionRequest[] }
@@ -122,7 +122,7 @@ export function reducer(state: SessionState, action: Action): SessionState {
         contextTokens: Math.round(action.contextPct / 100 * action.contextWindow),
       }
     case 'STATS_RESTORED':
-      return { ...state, totalTokens: action.totalTokens, workingTimeMs: action.workingTimeMs, ...(action.gitBranch !== undefined ? { gitBranch: action.gitBranch } : {}) }
+      return { ...state, totalTokens: action.totalTokens, workingTimeMs: action.workingTimeMs, ...(action.gitBranch !== undefined ? { gitBranch: action.gitBranch } : {}), ...(action.statuslineTokens !== undefined ? { statuslineTokens: action.statuslineTokens } : {}) }
     case 'GIT_BRANCH_SET':
       return { ...state, gitBranch: action.gitBranch }
     case 'STATUSLINE_UPDATE':
