@@ -5,6 +5,7 @@ import type { WebSocket } from 'ws'
 import type { FastifyInstance } from 'fastify'
 import { db } from '../db/schema'
 import { resolveBin } from '../utils/resolveBin'
+import { getGitBranch } from '../utils/getGitBranch'
 
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000
 
@@ -20,6 +21,7 @@ interface StreamEvent {
   type: string
   subtype?: string
   session_id?: string
+  model?: string
   result?: string
   is_error?: boolean
   message?: {
@@ -30,24 +32,47 @@ interface StreamEvent {
   }
 }
 
+export type StatuslinePayload = {
+  model: string | null
+  costUsd: number | null
+  apiDurationMs: number | null
+  linesAdded: number | null
+  linesRemoved: number | null
+  contextInputTokens: number | null
+  contextOutputTokens: number | null
+  contextWindowSize: number | null
+  contextPct: number | null
+  effortLevel: string | null
+  thinkingEnabled: boolean | null
+  rateLimits: {
+    fiveHour?: { pct: number; resetsAt: number }
+    sevenDay?: { pct: number; resetsAt: number }
+  } | null
+}
+
 interface ServerMessage {
-  type: 'output' | 'message' | 'status' | 'history' | 'tokens' | 'session_state' | 'permission_request'
+  type: 'output' | 'message' | 'status' | 'history' | 'tokens' | 'session_state' | 'permission_request' | 'model' | 'statusline'
   data?: string
   role?: string
   content?: string
   state?: string
+  model?: string
   messages?: Array<{ role: string; content: string; created_at: number }>
   inputTokens?: number
   outputTokens?: number
+  contextTokens?: number
   totalTokens?: number
   workingTimeMs?: number
+  gitBranch?: string | null
   permissions?: Array<{ tool: string; summary: string }>
+  statuslineData?: StatuslinePayload
 }
 
 interface ClientMessage {
   type: 'chat' | 'input' | 'resize' | 'interrupt' | 'permission_set'
   data?: string
   allowedTools?: string[]
+  persist?: boolean
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -56,7 +81,7 @@ function getBypassPermissions(): boolean {
   const row = db
     .prepare('SELECT value FROM settings WHERE key = ?')
     .get('bypass_permissions') as { value: string } | undefined
-  return row ? row.value === 'true' : true
+  return row ? row.value === 'true' : false
 }
 
 function summarizeToolInput(name: string, input: Record<string, unknown>): string {
@@ -201,6 +226,7 @@ class ActiveSession {
           if (event.type === 'system' && event.subtype === 'init') {
             const sid = event.session_id?.slice(0, 8) ?? '?'
             this.broadcast({ type: 'output', data: `[session ${sid}]\r\n` })
+            if (event.model) this.broadcast({ type: 'model', model: event.model })
             // Claude is now ready for input. Write the user message as if typed
             // in the terminal. Claude Code puts stdin in raw mode (no echo), so
             // this won't produce a duplicate line in the terminal output.
@@ -277,7 +303,10 @@ class ActiveSession {
               'UPDATE sessions SET total_tokens = total_tokens + ?, working_time_ms = working_time_ms + ? WHERE id = ?',
             ).run(inputTokens + outputTokens, elapsed, this.id)
             if (inputTokens > 0 || outputTokens > 0) {
-              this.broadcast({ type: 'tokens', inputTokens, outputTokens })
+              const contextTokens = (lastUsage?.input_tokens ?? 0)
+                + (lastUsage?.cache_read_input_tokens ?? 0)
+                + (lastUsage?.cache_creation_input_tokens ?? 0)
+              this.broadcast({ type: 'tokens', inputTokens, outputTokens, contextTokens })
             }
             const finalText = event.result ?? ''
             this.broadcast({ type: 'message', role: 'assistant', content: finalText })
@@ -353,6 +382,10 @@ class ActiveSession {
 
   writeToPty(data: string) {
     this.currentPty?.write(data)
+  }
+
+  broadcastStatusline(data: StatuslinePayload) {
+    this.broadcast({ type: 'statusline', statuslineData: data })
   }
 
   resizePty(cols: number, rows: number) {
@@ -439,12 +472,11 @@ export async function sessionWsRoutes(fastify: FastifyInstance) {
         type: 'session_state',
         totalTokens: row.total_tokens ?? 0,
         workingTimeMs: row.working_time_ms ?? 0,
+        gitBranch: getGitBranch(row.workdir),
       }))
 
-      // Clear ended_at so resumed sessions show as active
-      if (row.ended_at !== null) {
-        db.prepare('UPDATE sessions SET ended_at = NULL WHERE id = ?').run(id)
-      }
+      // Clear ended_at so resumed sessions show as active; stamp last_used
+      db.prepare('UPDATE sessions SET last_used = ?, ended_at = NULL WHERE id = ?').run(Date.now(), id)
 
       const session = sessionManager.getOrCreate(id, row.workdir, row.claude_session_id ?? null)
       session.attach(socket)
@@ -453,7 +485,7 @@ export async function sessionWsRoutes(fastify: FastifyInstance) {
         try {
           const msg = JSON.parse(raw.toString()) as ClientMessage
           if (msg.type === 'chat' && msg.data) {
-            session.sendMessage(msg.data.replace(/\n$/, ''))
+            session.sendMessage(msg.data.replace(/\n$/, ''), { persistUserMsg: msg.persist !== false })
           } else if (msg.type === 'permission_set' && Array.isArray(msg.allowedTools)) {
             msg.allowedTools.forEach((t: string) => session.addAllowedTool(t))
           } else if (msg.type === 'input' && msg.data) {

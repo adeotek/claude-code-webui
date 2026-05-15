@@ -116,7 +116,9 @@ export default function DashboardView() {
     const lastUserMsg = [...state.messages].reverse().find((m) => m.role === 'user')
     dispatch({ type: 'PERMISSION_CLEARED' })
     send({ type: 'permission_set', allowedTools: tools })
-    if (lastUserMsg) handleSend(lastUserMsg.content)
+    // Resend without dispatching MESSAGE_ADDED — the bubble is already in the list.
+    // persist:false tells the backend not to re-insert the user message (already stored on first send).
+    if (lastUserMsg) send({ type: 'chat', data: lastUserMsg.content + '\n', persist: false })
   }
 
   function handlePermissionDismiss() {
@@ -179,6 +181,7 @@ export default function DashboardView() {
           onRename={handleRenameSession}
           sessionName={state.name}
           totalTokens={state.totalTokens}
+
           sessionStartedAt={activeSession?.started_at ?? null}
         />
         <TerminalSession />
@@ -202,6 +205,7 @@ export default function DashboardView() {
               onRename={handleRenameSession}
               sessionName={state.name}
               totalTokens={state.totalTokens}
+    
               sessionStartedAt={activeSession?.started_at ?? null}
             />
             <MessageList messages={state.messages} />

@@ -1,4 +1,4 @@
-import { Loader2, Settings } from 'lucide-react'
+import { Loader2, Settings, Table2 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import type { AccountInfo } from '../hooks/useAccount'
 import type { UsageData } from '../hooks/useUsage'
@@ -96,7 +96,7 @@ export default function StatsStrip({ account, usage, activeSessions, loading }: 
           <Chip label="plan" value={formatSubscription(rl.subscriptionType)} valueClass="text-accent font-medium" />
         )}
 
-        {rl != null && (
+        {rl != null && !rl.isEnterprise && (
           <Chip
             label="5h"
             value={`${rl.fiveHourPct}%`}
@@ -105,7 +105,7 @@ export default function StatsStrip({ account, usage, activeSessions, loading }: 
           />
         )}
 
-        {rl != null && (
+        {rl != null && !rl.isEnterprise && (
           <Chip
             label="wk"
             value={`${rl.sevenDayPct}%`}
@@ -161,6 +161,16 @@ export default function StatsStrip({ account, usage, activeSessions, loading }: 
         )}
       </div>
 
+      <NavLink
+        to="/sessions-table"
+        title="Sessions table"
+        className={({ isActive }) =>
+          'flex-shrink-0 flex items-center justify-center w-7 h-7 rounded transition-colors ' +
+          (isActive ? 'text-accent' : 'text-text-dim hover:text-text-muted hover:bg-bg-elevated')
+        }
+      >
+        <Table2 size={14} strokeWidth={1.5} />
+      </NavLink>
       <NavLink
         to="/settings"
         title="Settings"

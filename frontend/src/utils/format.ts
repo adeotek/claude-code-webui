@@ -37,9 +37,17 @@ export function formatRelativeTime(ts: number): string {
   const diffD = Math.floor(diffH / 24)
   if (diffD < 30) return `${diffD} day${diffD === 1 ? '' : 's'} ago`
   const diffW = Math.floor(diffD / 7)
-  if (diffD < 60) return `${diffW} week${diffW === 1 ? '' : 's'} ago`
+  if (diffD < 56) return `${diffW} week${diffW === 1 ? '' : 's'} ago`
   const diffMo = Math.floor(diffD / 30)
   return `${diffMo} month${diffMo === 1 ? '' : 's'} ago`
+}
+
+export function formatCost(usd: number): string {
+  if (usd === 0) return '$0.00'
+  if (usd < 0.001) return `$${usd.toFixed(5)}`
+  if (usd < 0.01) return `$${usd.toFixed(4)}`
+  if (usd < 1) return `$${usd.toFixed(3)}`
+  return `$${usd.toFixed(2)}`
 }
 
 export function lastSegment(path: string): string {

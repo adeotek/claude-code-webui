@@ -77,6 +77,73 @@ function initDb(): Database.Database {
     db.prepare('ALTER TABLE sessions ADD COLUMN terminal_scrollback TEXT').run()
   }
 
+  if (!sessionCols.find((c) => c.name === 'cost_usd')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN cost_usd REAL').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'api_duration_ms')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN api_duration_ms INTEGER').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'lines_added')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN lines_added INTEGER').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'lines_removed')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN lines_removed INTEGER').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'context_input_tokens')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN context_input_tokens INTEGER').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'context_output_tokens')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN context_output_tokens INTEGER').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'context_window_size')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN context_window_size INTEGER').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'context_pct')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN context_pct REAL').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'effort_level')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN effort_level TEXT').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'thinking_enabled')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN thinking_enabled INTEGER').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'rate_limit_5h_pct')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN rate_limit_5h_pct REAL').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'rate_limit_5h_resets_at')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN rate_limit_5h_resets_at INTEGER').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'rate_limit_7d_pct')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN rate_limit_7d_pct REAL').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'rate_limit_7d_resets_at')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN rate_limit_7d_resets_at INTEGER').run()
+  }
+
+  if (!sessionCols.find((c) => c.name === 'last_used')) {
+    db.prepare('ALTER TABLE sessions ADD COLUMN last_used INTEGER').run()
+  }
+  // Back-fill last_used for rows that predate the column — use started_at as a reasonable default.
+  db.prepare('UPDATE sessions SET last_used = started_at WHERE last_used IS NULL').run()
+
+  // On startup, mark any sessions that were still "active" (ended_at NULL) as ended now.
+  // PTY processes don't survive a server restart, so leaving ended_at NULL would make
+  // them show as active in the UI forever.
+  db.prepare('UPDATE sessions SET ended_at = ? WHERE ended_at IS NULL').run(Date.now())
+
   db.prepare(`
     CREATE TABLE IF NOT EXISTS settings (
       key   TEXT PRIMARY KEY,

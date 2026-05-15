@@ -33,12 +33,28 @@ export function useWebSocket(onOutput: (data: string) => void) {
             role?: string
             content?: string
             state?: string
+            model?: string
             messages?: Array<{ role: string; content: string; created_at: number }>
             inputTokens?: number
             outputTokens?: number
+            contextTokens?: number
             totalTokens?: number
             workingTimeMs?: number
+            gitBranch?: string | null
             permissions?: Array<{ tool: string; summary: string }>
+            statuslineData?: {
+              contextPct?: number | null
+              contextWindowSize?: number | null
+              contextInputTokens?: number | null
+              contextOutputTokens?: number | null
+              costUsd?: number | null
+              apiDurationMs?: number | null
+              model?: string | null
+              effortLevel?: string | null
+              thinkingEnabled?: boolean | null
+              linesAdded?: number | null
+              linesRemoved?: number | null
+            }
           }
           if (msg.type === 'output' && msg.data) {
             onOutput(msg.data)
@@ -49,10 +65,12 @@ export function useWebSocket(onOutput: (data: string) => void) {
             })
           } else if (msg.type === 'status' && msg.state) {
             dispatch({ type: 'WS_STATE', timestamp: Date.now(), state: msg.state as 'running' | 'idle' | 'error' })
+          } else if (msg.type === 'model' && msg.model) {
+            dispatch({ type: 'MODEL_SET', model: msg.model })
           } else if (msg.type === 'tokens' && msg.inputTokens != null && msg.outputTokens != null) {
-            dispatch({ type: 'TOKENS_ADDED', inputTokens: msg.inputTokens, outputTokens: msg.outputTokens })
+            dispatch({ type: 'TOKENS_ADDED', inputTokens: msg.inputTokens, outputTokens: msg.outputTokens, contextTokens: msg.contextTokens })
           } else if (msg.type === 'session_state') {
-            dispatch({ type: 'STATS_RESTORED', totalTokens: msg.totalTokens ?? 0, workingTimeMs: msg.workingTimeMs ?? 0 })
+            dispatch({ type: 'STATS_RESTORED', totalTokens: msg.totalTokens ?? 0, workingTimeMs: msg.workingTimeMs ?? 0, gitBranch: msg.gitBranch })
           } else if (msg.type === 'permission_request' && Array.isArray(msg.permissions)) {
             dispatch({ type: 'PERMISSION_REQUEST', permissions: msg.permissions })
           } else if (msg.type === 'history' && Array.isArray(msg.messages)) {
@@ -63,6 +81,22 @@ export function useWebSocket(onOutput: (data: string) => void) {
               createdAt: m.created_at,
             }))
             dispatch({ type: 'HISTORY_LOADED', messages: history })
+          } else if (msg.type === 'statusline' && msg.statuslineData) {
+            const d = msg.statuslineData
+            dispatch({
+              type: 'STATUSLINE_UPDATE',
+              contextPct: d.contextPct ?? 0,
+              contextWindow: d.contextWindowSize ?? 200_000,
+              contextInputTokens: d.contextInputTokens ?? 0,
+              contextOutputTokens: d.contextOutputTokens ?? 0,
+              costUsd: d.costUsd ?? 0,
+              apiDurationMs: d.apiDurationMs ?? null,
+              model: d.model ?? null,
+              effortLevel: d.effortLevel ?? null,
+              thinkingEnabled: d.thinkingEnabled ?? null,
+              linesAdded: d.linesAdded ?? null,
+              linesRemoved: d.linesRemoved ?? null,
+            })
           }
         } catch {
           // ignore malformed frames

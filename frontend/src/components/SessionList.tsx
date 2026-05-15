@@ -72,24 +72,25 @@ export default function SessionList({
                   <span className="text-text-primary text-sm font-medium truncate">
                     {session.name ?? lastSegment(session.workdir)}
                   </span>
-                  {session.is_active ? (
-                    <span className="flex-shrink-0 px-1.5 py-0.5 text-xs bg-status-green/10 text-status-green border border-status-green/20 rounded">
-                      active
-                    </span>
-                  ) : (
-                    <span className="flex-shrink-0 px-1.5 py-0.5 text-xs bg-bg-panel text-text-dim border border-border-subtle rounded">
-                      ended
-                    </span>
-                  )}
                 </div>
                 <div className="text-text-muted text-xs mt-0.5 truncate">{session.workdir}</div>
               </div>
 
-              {/* Middle: time + message count */}
+              {/* Middle: time */}
               <div className="text-right flex-shrink-0 hidden sm:block">
                 <div className="text-text-secondary text-xs">{formatRelativeTime(session.started_at)}</div>
-                <div className="text-text-muted text-xs mt-0.5">{session.message_count} messages</div>
               </div>
+
+              {/* State indicator */}
+              {session.is_active ? (
+                <span className="flex-shrink-0 px-1.5 py-0.5 text-xs bg-status-green/10 text-status-green border border-status-green/20 rounded">
+                  active
+                </span>
+              ) : (
+                <span className="flex-shrink-0 px-1.5 py-0.5 text-xs bg-bg-panel text-text-dim border border-border-subtle rounded">
+                  ended
+                </span>
+              )}
 
               {/* Right: actions */}
               <div className="flex items-center gap-1.5 flex-shrink-0">

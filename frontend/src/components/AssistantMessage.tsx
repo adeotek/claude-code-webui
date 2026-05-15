@@ -59,7 +59,9 @@ export default function AssistantMessage({ content }: AssistantMessageProps) {
           components={{
             code({ className, children, ...props }) {
               const langMatch = (className ?? '').match(/language-(\w+)/)
-              const isInline = !langMatch
+              const content = String(children)
+              // In react-markdown v8+, block code (fenced/indented) always ends with '\n'; inline code never does
+              const isInline = !langMatch && !content.endsWith('\n')
               return isInline ? (
                 <code className="bg-bg-elevated text-accent px-1 py-0.5 rounded text-[10px]" {...props}>
                   {children}
@@ -67,11 +69,11 @@ export default function AssistantMessage({ content }: AssistantMessageProps) {
               ) : (
                 <SyntaxHighlighter
                   style={vscDarkPlus}
-                  language={langMatch[1]}
+                  language={langMatch?.[1] ?? 'text'}
                   PreTag="div"
                   customStyle={{ margin: '8px 0', borderRadius: 4, fontSize: 10 }}
                 >
-                  {String(children).replace(/\n$/, '')}
+                  {content.replace(/\n$/, '')}
                 </SyntaxHighlighter>
               )
             },

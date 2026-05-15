@@ -31,6 +31,24 @@ export function useTerminalSession(onOutput: (data: string) => void, onConnect?:
             type: string
             data?: string
             state?: string
+            contextPct?: number
+            contextWindow?: number
+            gitBranch?: string | null
+            contextInputTokens?: number
+            contextOutputTokens?: number
+            statuslineData?: {
+              contextPct?: number | null
+              contextWindowSize?: number | null
+              contextInputTokens?: number | null
+              contextOutputTokens?: number | null
+              costUsd?: number | null
+              apiDurationMs?: number | null
+              model?: string | null
+              effortLevel?: string | null
+              thinkingEnabled?: boolean | null
+              linesAdded?: number | null
+              linesRemoved?: number | null
+            }
           }
           if (msg.type === 'output' && msg.data) {
             onOutput(msg.data)
@@ -42,6 +60,31 @@ export function useTerminalSession(onOutput: (data: string) => void, onConnect?:
             } else if (msg.state === 'disconnected' || msg.state === 'error') {
               dispatch({ type: 'WS_STATE', timestamp: Date.now(), state: 'disconnected' })
             }
+          } else if (msg.type === 'context' && msg.contextPct != null && msg.contextWindow != null) {
+            dispatch({ type: 'CONTEXT_UPDATED', contextPct: msg.contextPct, contextWindow: msg.contextWindow })
+          } else if (msg.type === 'git_branch') {
+            dispatch({ type: 'GIT_BRANCH_SET', gitBranch: msg.gitBranch ?? null })
+          } else if (msg.type === 'session_state') {
+            const tokens = (msg.contextInputTokens ?? 0) + (msg.contextOutputTokens ?? 0)
+            if (tokens > 0) {
+              dispatch({ type: 'STATS_RESTORED', totalTokens: 0, workingTimeMs: 0, statuslineTokens: tokens })
+            }
+          } else if (msg.type === 'statusline' && msg.statuslineData) {
+            const d = msg.statuslineData
+            dispatch({
+              type: 'STATUSLINE_UPDATE',
+              contextPct: d.contextPct ?? 0,
+              contextWindow: d.contextWindowSize ?? 200_000,
+              contextInputTokens: d.contextInputTokens ?? 0,
+              contextOutputTokens: d.contextOutputTokens ?? 0,
+              costUsd: d.costUsd ?? 0,
+              apiDurationMs: d.apiDurationMs ?? null,
+              model: d.model ?? null,
+              effortLevel: d.effortLevel ?? null,
+              thinkingEnabled: d.thinkingEnabled ?? null,
+              linesAdded: d.linesAdded ?? null,
+              linesRemoved: d.linesRemoved ?? null,
+            })
           }
         } catch {
           // ignore malformed frames
