@@ -71,6 +71,7 @@ The Makefile's `dev-backend` target and `run.sh` both conditionally set `NODE_EX
 | GET/POST | `/api/sessions` | `routes/sessions.ts` | List sessions, create session |
 | POST | `/api/sessions/:id/stop` | `routes/sessions.ts` | Stop active session |
 | GET/POST | `/api/settings` | `routes/settings.ts` | Persistent key-value settings (SQLite-backed) |
+| GET | `/api/system` | `routes/system.ts` | Read-only runtime info (SQLite DB path) |
 | GET | `/health` | `server.ts` | Health check |
 | WS | `/ws/session/:id` | `ws/session.ts` | Chat PTY I/O over WebSocket |
 | WS | `/ws/terminal/:id` | `ws/terminal.ts` | Terminal PTY I/O over WebSocket |

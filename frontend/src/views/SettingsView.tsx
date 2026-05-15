@@ -9,6 +9,7 @@ export default function SettingsView() {
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [statuslineUnmatched, setStatuslineUnmatched] = useState<'ignore' | 'create'>('ignore')
   const [settingsLoaded, setSettingsLoaded] = useState(false)
+  const [dbPath, setDbPath] = useState<string | null>(null)
 
   useEffect(() => {
     return () => { if (savedTimerRef.current) clearTimeout(savedTimerRef.current) }
@@ -24,6 +25,11 @@ export default function SettingsView() {
         setSettingsLoaded(true)
       })
       .catch(() => setSettingsLoaded(true))
+
+    fetch('/api/system')
+      .then((r) => r.json() as Promise<{ db_path: string }>)
+      .then((data) => setDbPath(data.db_path))
+      .catch(() => {})
   }, [])
 
   async function handleSave() {
@@ -56,7 +62,7 @@ export default function SettingsView() {
         </NavLink>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-md">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 w-full">
       {/* Session mode toggle */}
       <div className="space-y-2">
         <label className="text-text-secondary text-xs uppercase tracking-widest block">
@@ -130,6 +136,19 @@ export default function SettingsView() {
         <Save size={14} />
         {saved ? 'Saved!' : 'Save'}
       </button>
+
+      {/* System info — read-only */}
+      <div className="space-y-2 pt-4 border-t border-border-subtle">
+        <label className="text-text-secondary text-xs uppercase tracking-widest block">
+          Database Location
+        </label>
+        <p className="text-text-muted text-xs">
+          Read-only. Path to the SQLite database file storing sessions, messages, settings, and caches.
+        </p>
+        <div className="text-text-secondary text-xs font-mono bg-bg-elevated border border-border-subtle rounded px-3 py-2 break-all select-all">
+          {dbPath ?? 'Loading…'}
+        </div>
+      </div>
       </div>
     </div>
   )

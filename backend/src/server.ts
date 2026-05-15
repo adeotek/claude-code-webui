@@ -10,6 +10,7 @@ import { sessionRoutes } from './routes/sessions'
 import { sessionWsRoutes } from './ws/session'
 import { terminalWsRoutes } from './ws/terminal'
 import { settingsRoutes } from './routes/settings'
+import { systemRoutes } from './routes/system'
 import { initAccountCache } from './services/accountCache'
 import { statuslineRoutes } from './routes/statusline'
 import { setupStatusline } from './lib/setup-statusline'
@@ -42,6 +43,7 @@ async function start() {
   await fastify.register(sessionWsRoutes)
   await fastify.register(terminalWsRoutes)
   await fastify.register(settingsRoutes)
+  await fastify.register(systemRoutes)
   await fastify.register(statuslineRoutes)
 
   fastify.get('/health', async () => ({ status: 'ok' }))
