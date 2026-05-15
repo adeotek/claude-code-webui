@@ -1,5 +1,5 @@
 [Unit]
-Description=Claude Code Dashboard
+Description=Claude Code Web UI
 After=network.target
 
 [Service]
