@@ -8,12 +8,15 @@ A browser-based UI for [Claude Code](https://claude.ai/code) — manage sessions
 
 ## Features
 
-- **Session management** — create, resume, rename, and delete Claude Code sessions
+- **Session management** — create, resume, rename, and delete Claude Code sessions; sessions are automatically resumed (with `--resume`) when reconnecting to a previous terminal session
 - **Terminal mode** — full interactive xterm.js terminal connected directly to Claude Code (default)
 - **Chat mode** — structured message view with markdown rendering and syntax-highlighted code blocks
+- **Live session stats** — per-turn cost, API duration, context window %, token counts, lines added/removed, effort level, thinking mode, and rate limits — updated automatically via the Claude CLI statusline hook
+- **Rich session header** — shows model, working directory, git branch, context %, tokens, cost, working time, and more
 - **Usage dashboard** — daily token usage graph
 - **Account overview** — Claude version, authentication status, and model info
 - **Persistent history** — session messages, token counts, and terminal scrollback stored in SQLite
+- **Auto-track external sessions** — optionally auto-add sessions started outside the webui to the session list when their stats arrive
 
 ## Quick Start
 
@@ -115,6 +118,36 @@ journalctl --user -u claude-code-dashboard -f
 | `make service-install` | Install as systemd user service |
 | `make service-uninstall` | Stop, disable, and remove the service |
 | `make service-test` | Run service install test suite |
+
+## Statusline hook
+
+On startup the backend automatically installs `~/.claude/webui-statusline.sh` and configures the `statusLine` entry in `~/.claude/settings.json`. After each assistant turn, Claude Code pipes its stats JSON through the script, which fires a background `curl` to `/api/statusline` without blocking your terminal.
+
+- If no `statusLine` is configured yet, the script is installed as a silent sink.
+- If one already exists, the webui script is prepended as a pipe so both run in sequence.
+- The hook is idempotent — restarting the server never duplicates the configuration.
+
+**Nothing needs to be done manually.** The hook becomes active the first time you start the server.
+
+### Removing the hook
+
+If you want to uninstall the hook without uninstalling the webui, run the appropriate script for your platform:
+
+**Linux / macOS**
+```bash
+bash scripts/remove-statusline-hook.sh
+```
+
+**Windows (PowerShell 7+)**
+```powershell
+.\scripts\remove-statusline-hook.ps1
+```
+
+Both scripts remove `~/.claude/webui-statusline.sh` and undo the `statusLine` entry in `~/.claude/settings.json`. If the webui script was piped into an existing statusline command, the original downstream command is restored rather than removed.
+
+### Auto-track external sessions
+
+By default, stats arriving for an unrecognised Claude session (one started outside the webui) are silently ignored. Enable **Settings → Statusline: Unregistered Sessions → Auto-track** to have the webui automatically create a session row for it.
 
 ## Contributing
 
