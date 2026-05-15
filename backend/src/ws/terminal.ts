@@ -15,7 +15,7 @@ function getBypassPermissions(): boolean {
   const row = db
     .prepare('SELECT value FROM settings WHERE key = ?')
     .get('bypass_permissions') as { value: string } | undefined
-  return row ? row.value === 'true' : true
+  return row ? row.value === 'true' : false
 }
 
 type TerminalServerMessage =

@@ -86,7 +86,7 @@ export function reducer(state: SessionState, action: Action): SessionState {
     case 'SESSION_CLEARED':
       return { ...initial }
     case 'RESUME_SESSION':
-      return { ...state, sessionId: action.id, workdir: action.workdir, name: action.name ?? null, mode: action.mode, messages: [], wsState: 'connecting', workingTimeMs: 0, runningStartedAt: null, totalTokens: 0, contextTokens: 0, contextPct: 0, contextWindow: 200_000, costUsd: 0, effortLevel: null, pendingPermissions: null }
+      return { ...state, sessionId: action.id, workdir: action.workdir, name: action.name ?? null, mode: action.mode, messages: [], wsState: 'connecting', workingTimeMs: 0, runningStartedAt: null, totalTokens: 0, contextTokens: 0, contextPct: 0, contextWindow: 200_000, costUsd: 0, apiDurationMs: null, effortLevel: null, thinkingEnabled: null, statuslineTokens: null, linesAdded: null, linesRemoved: null, gitBranch: null, pendingPermissions: null }
     case 'WS_STATE': {
       const prev = state.wsState
       const next = action.state

@@ -72,6 +72,7 @@ interface ClientMessage {
   type: 'chat' | 'input' | 'resize' | 'interrupt' | 'permission_set'
   data?: string
   allowedTools?: string[]
+  persist?: boolean
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -80,7 +81,7 @@ function getBypassPermissions(): boolean {
   const row = db
     .prepare('SELECT value FROM settings WHERE key = ?')
     .get('bypass_permissions') as { value: string } | undefined
-  return row ? row.value === 'true' : true
+  return row ? row.value === 'true' : false
 }
 
 function summarizeToolInput(name: string, input: Record<string, unknown>): string {
@@ -484,7 +485,7 @@ export async function sessionWsRoutes(fastify: FastifyInstance) {
         try {
           const msg = JSON.parse(raw.toString()) as ClientMessage
           if (msg.type === 'chat' && msg.data) {
-            session.sendMessage(msg.data.replace(/\n$/, ''))
+            session.sendMessage(msg.data.replace(/\n$/, ''), { persistUserMsg: msg.persist !== false })
           } else if (msg.type === 'permission_set' && Array.isArray(msg.allowedTools)) {
             msg.allowedTools.forEach((t: string) => session.addAllowedTool(t))
           } else if (msg.type === 'input' && msg.data) {
