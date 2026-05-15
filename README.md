@@ -101,8 +101,8 @@ make service-install ARGS=--skip-build
 
 ```bash
 make service-uninstall
-systemctl --user status claude-code-dashboard
-journalctl --user -u claude-code-dashboard -f
+systemctl --user status claude-code-webui
+journalctl --user -u claude-code-webui -f
 ```
 
 ## Commands reference

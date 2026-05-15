@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useSession } from '../context/SessionContext'
-import DashboardView from './DashboardView'
-import type { Session } from '../hooks/useDashboard'
+import HomeView from './HomeView'
+import type { Session } from '../hooks/useHomeData'
 
 export default function SessionRoute() {
   const { sessionId } = useParams<{ sessionId: string }>()
@@ -47,7 +47,7 @@ export default function SessionRoute() {
   // Keep URL and context in sync: clear session state whenever this route unmounts.
   // This handles browser Back/Forward navigation, which bypasses the explicit navigate()
   // calls in the session handlers and would otherwise leave a stale sessionId in context,
-  // causing DashboardView at "/" to render the session view instead of the session list.
+  // causing HomeView at "/" to render the session view instead of the session list.
   useEffect(() => {
     return () => { dispatch({ type: 'SESSION_CLEARED' }) }
   }, [dispatch])
@@ -75,5 +75,5 @@ export default function SessionRoute() {
     )
   }
 
-  return <DashboardView />
+  return <HomeView />
 }

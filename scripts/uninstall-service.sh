@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SERVICE_NAME="claude-code-dashboard"
+SERVICE_NAME="claude-code-webui"
 SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
 ENV_FILE="$SYSTEMD_USER_DIR/$SERVICE_NAME.env"
 UNIT_FILE="$SYSTEMD_USER_DIR/$SERVICE_NAME.service"

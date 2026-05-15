@@ -29,7 +29,7 @@ export interface Session {
   last_used: number | null
 }
 
-export interface DashboardData {
+export interface HomeData {
   account: AccountInfo | null
   usage: UsageData | null
   sessions: Session[]
@@ -39,7 +39,7 @@ export interface DashboardData {
   error: string | null
 }
 
-export function useDashboard(month?: string): DashboardData & { refresh: () => void } {
+export function useHomeData(month?: string): HomeData & { refresh: () => void } {
   const [account, setAccount] = useState<AccountInfo | null>(null)
   const [usage, setUsage] = useState<UsageData | null>(null)
   const [sessions, setSessions] = useState<Session[]>([])

@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useSession } from '../context/SessionContext'
 import { useWebSocket } from '../hooks/useWebSocket'
-import { useDashboard, type Session } from '../hooks/useDashboard'
+import { useHomeData, type Session } from '../hooks/useHomeData'
 import StatsStrip from '../components/StatsStrip'
 import SessionList from '../components/SessionList'
 import SessionHeader from '../components/SessionHeader'
@@ -15,7 +15,7 @@ import UsageChart from '../components/UsageChart'
 import PermissionDialog from '../components/PermissionDialog'
 import TerminalSession from '../components/TerminalSession'
 
-export default function DashboardView() {
+export default function HomeView() {
   const { state, dispatch } = useSession()
   const location = useLocation()
   const navigate = useNavigate()
@@ -23,7 +23,7 @@ export default function DashboardView() {
   const [showModal, setShowModal] = useState(location.state?.openModal === true)
   const [chartOpen, setChartOpen] = useState(false)
 
-  const { account, usage, sessions, activeSessions, defaultSessionMode, loading, refresh } = useDashboard()
+  const { account, usage, sessions, activeSessions, defaultSessionMode, loading, refresh } = useHomeData()
   // Local sessions state for optimistic deletion
   const [localSessions, setLocalSessions] = useState<Session[] | null>(null)
   const displaySessions = localSessions ?? sessions

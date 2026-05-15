@@ -1,6 +1,6 @@
 import { Plus, Play, Square, Trash2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import type { Session } from '../hooks/useDashboard'
+import type { Session } from '../hooks/useHomeData'
 import { formatRelativeTime, lastSegment } from '../utils/format'
 
 interface SessionListProps {
