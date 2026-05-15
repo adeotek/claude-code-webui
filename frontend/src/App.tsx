@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import DashboardView from './views/DashboardView'
+import HomeView from './views/HomeView'
 import SessionRoute from './views/SessionRoute'
 import SettingsView from './views/SettingsView'
 import SessionsTableView from './views/SessionsTableView'
@@ -12,7 +12,7 @@ export default function App() {
         <div className="flex h-screen bg-bg-base text-text-primary overflow-hidden font-mono">
           <main className="flex-1 overflow-hidden flex flex-col">
             <Routes>
-              <Route path="/" element={<DashboardView />} />
+              <Route path="/" element={<HomeView />} />
               <Route path="/session/:sessionId" element={<SessionRoute />} />
               <Route path="/new" element={<Navigate to="/" state={{ openModal: true }} replace />} />
               <Route path="/settings" element={<SettingsView />} />

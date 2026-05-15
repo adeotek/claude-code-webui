@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INSTALL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
-SERVICE_NAME="claude-code-dashboard"
+SERVICE_NAME="claude-code-webui"
 ENV_FILE="$SYSTEMD_USER_DIR/$SERVICE_NAME.env"
 UNIT_FILE="$SYSTEMD_USER_DIR/$SERVICE_NAME.service"
 TEMPLATE="$SCRIPT_DIR/$SERVICE_NAME.service.template"
@@ -87,6 +87,6 @@ loginctl enable-linger "$USER" || echo "Warning: could not enable linger — you
 
 PORT_ACTUAL=$PORT
 echo ""
-echo "Done! Claude Code Dashboard is running at: http://localhost:${PORT_ACTUAL}"
+echo "Done! Claude Code Web UI is running at: http://localhost:${PORT_ACTUAL}"
 echo "Check status : systemctl --user status $SERVICE_NAME"
 echo "View logs    : journalctl --user -u $SERVICE_NAME -f"

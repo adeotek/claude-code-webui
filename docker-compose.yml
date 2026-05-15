@@ -1,5 +1,5 @@
 services:
-  dashboard:
+  webui:
     image: ghcr.io/adeotek/claude-code-webui:latest
     build:
       context: .
