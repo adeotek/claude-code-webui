@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { useParams, Navigate, useLocation } from 'react-router-dom'
 import { useSession } from '../context/SessionContext'
 import HomeView from './HomeView'
 import type { Session } from '../hooks/useHomeData'
@@ -8,7 +8,6 @@ export default function SessionRoute() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const { state, dispatch } = useSession()
   const location = useLocation()
-  const navigate = useNavigate()
   // Skip loading state if the session is already in context (e.g. right after SESSION_CREATED).
   const [loading, setLoading] = useState(state.sessionId !== sessionId)
   const [error, setError] = useState(false)
@@ -51,12 +50,6 @@ export default function SessionRoute() {
   useEffect(() => {
     return () => { dispatch({ type: 'SESSION_CLEARED' }) }
   }, [dispatch])
-
-  // Safety net: if session is cleared while mounted (e.g. an explicit navigate call already
-  // fired — this effect just cleans up any edge case where it didn't).
-  useEffect(() => {
-    if (!loading && !state.sessionId) navigate('/', { replace: true })
-  }, [loading, state.sessionId, navigate])
 
   function fetchAndSetModel() {
     fetch('/api/account')

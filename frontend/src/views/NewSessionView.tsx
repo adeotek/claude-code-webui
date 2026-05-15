@@ -19,7 +19,7 @@ export default function NewSessionView() {
   function handleStart(sessionId: string, workdir: string, name: string | null, mode: 'chat' | 'terminal') {
     dispatch({ type: 'SESSION_CREATED', sessionId, workdir, mode, ...(name ? { name } : {}) })
     if (account?.model) dispatch({ type: 'MODEL_SET', model: account.model })
-    navigate('/')
+    navigate(`/session/${sessionId}`, { replace: true })
   }
 
   return (
