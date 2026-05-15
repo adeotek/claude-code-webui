@@ -71,11 +71,12 @@ export async function getUsage(month: string): Promise<UsageResult> {
 
 
 function buildResult(days: DayUsage[], month: string, sources: string[], rateLimits: OAuthUsageData | null): UsageResult {
+  const [y, m] = month.split('-').map(Number)
   const sessions = (db
     .prepare(`SELECT COUNT(*) as count FROM sessions WHERE started_at >= ? AND started_at < ?`)
     .get(
-      new Date(`${month}-01`).getTime(),
-      new Date(`${month}-01`).getTime() + 32 * 24 * 60 * 60 * 1000,
+      new Date(y, m - 1, 1).getTime(),
+      new Date(y, m, 1).getTime(),
     ) as { count: number }).count
 
   const totals = days.reduce(

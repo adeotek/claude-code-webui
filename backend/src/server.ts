@@ -11,6 +11,8 @@ import { sessionWsRoutes } from './ws/session'
 import { terminalWsRoutes } from './ws/terminal'
 import { settingsRoutes } from './routes/settings'
 import { initAccountCache } from './services/accountCache'
+import { statuslineRoutes } from './routes/statusline'
+import { setupStatusline } from './lib/setup-statusline'
 
 // TODO: add bearer token auth — add @fastify/bearer-auth plugin here
 // and set token via DASHBOARD_TOKEN env var
@@ -40,6 +42,7 @@ async function start() {
   await fastify.register(sessionWsRoutes)
   await fastify.register(terminalWsRoutes)
   await fastify.register(settingsRoutes)
+  await fastify.register(statuslineRoutes)
 
   fastify.get('/health', async () => ({ status: 'ok' }))
 
@@ -67,6 +70,7 @@ async function start() {
   }
 
   initAccountCache().catch((err) => fastify.log.error(err))
+  setupStatusline(PORT)
 }
 
 start()

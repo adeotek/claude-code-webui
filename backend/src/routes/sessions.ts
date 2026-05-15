@@ -27,6 +27,30 @@ export async function sessionRoutes(fastify: FastifyInstance) {
     }
   })
 
+  fastify.get('/api/sessions/table', async (_req, reply) => {
+    const rows = db
+      .prepare(
+        `SELECT s.id, s.workdir, s.name, s.model, s.mode,
+                s.started_at, s.last_used, s.ended_at, s.claude_session_id,
+                CASE WHEN s.ended_at IS NULL THEN 1 ELSE 0 END as is_active,
+                s.total_tokens, s.working_time_ms,
+                COALESCE(mc.message_count, 0) as message_count,
+                s.cost_usd, s.api_duration_ms,
+                s.lines_added, s.lines_removed,
+                s.context_input_tokens, s.context_output_tokens,
+                s.context_window_size, s.context_pct,
+                s.effort_level, s.thinking_enabled,
+                s.rate_limit_5h_pct, s.rate_limit_5h_resets_at,
+                s.rate_limit_7d_pct, s.rate_limit_7d_resets_at
+         FROM sessions s
+         LEFT JOIN (SELECT session_id, COUNT(*) as message_count FROM messages GROUP BY session_id) mc
+           ON mc.session_id = s.id
+         ORDER BY s.started_at DESC`,
+      )
+      .all()
+    return reply.send(rows)
+  })
+
   fastify.get<{ Params: { id: string } }>('/api/sessions/:id', async (req, reply) => {
     const { id } = req.params
     const row = db
@@ -72,9 +96,10 @@ export async function sessionRoutes(fastify: FastifyInstance) {
     const mode = modeRow?.value === 'terminal' ? 'terminal' : 'chat'
 
     const id = randomUUID()
+    const now = Date.now()
     db.prepare(
-      'INSERT INTO sessions (id, workdir, name, mode, started_at) VALUES (?, ?, ?, ?, ?)',
-    ).run(id, workdir, name?.trim() || null, mode, Date.now())
+      'INSERT INTO sessions (id, workdir, name, mode, started_at, last_used) VALUES (?, ?, ?, ?, ?, ?)',
+    ).run(id, workdir, name?.trim() || null, mode, now, now)
 
     return reply.status(201).send({ sessionId: id })
   })
@@ -132,7 +157,7 @@ export async function sessionRoutes(fastify: FastifyInstance) {
       const absWorkdir = session.workdir.startsWith('~')
         ? path.join(os.homedir(), session.workdir.slice(1))
         : session.workdir
-      const encoded = absWorkdir.replace(/[/.]/g, '-')
+      const encoded = absWorkdir.replace(/\//g, '-')
       const projectDir = path.join(os.homedir(), '.claude', 'projects', encoded)
       const base = path.join(projectDir, session.claude_session_id)
       try { fs.rmSync(`${base}.jsonl`) } catch { /* already gone */ }

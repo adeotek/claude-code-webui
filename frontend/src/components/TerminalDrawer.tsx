@@ -42,7 +42,8 @@ const TerminalDrawer = forwardRef<TerminalDrawerHandle, { wsState: string; onInp
 
       if (containerRef.current) {
         term.open(containerRef.current)
-        fit.fit()
+        // Do not call fit.fit() here — container starts hidden (display:none), so dimensions are 0.
+        // The open/termHeight effect below re-fits correctly once the drawer becomes visible.
         term.onResize(({ cols, rows }) => onResizeCbRef.current?.(cols, rows))
         term.onData((data) => onInputRef.current?.(data))
       }

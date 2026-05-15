@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, createLogger } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { hostname as getHostname, networkInterfaces } from 'os'
@@ -8,7 +8,18 @@ const localIps = (Object.values(networkInterfaces()).flat() as { internal: boole
   .filter(iface => iface && !iface.internal)
   .map(iface => iface.address)
 
+// Suppress EPIPE / ECONNRESET errors from the WS proxy — these are benign
+// "client disconnected while data was in flight" errors, not real failures.
+const logger = createLogger()
+const baseError = logger.error.bind(logger)
+logger.error = (msg, opts) => {
+  const code = (opts?.error as NodeJS.ErrnoException | undefined)?.code
+  if (code === 'EPIPE' || code === 'ECONNRESET') return
+  baseError(msg, opts)
+}
+
 export default defineConfig({
+  customLogger: logger,
   plugins: [tailwindcss(), react()],
   build: {
     rollupOptions: {
