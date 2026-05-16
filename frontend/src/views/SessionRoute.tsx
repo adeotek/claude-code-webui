@@ -31,17 +31,20 @@ export default function SessionRoute() {
     }
 
     // Slow path: new tab or direct URL — fetch session + account from API.
+    let cancelled = false
     Promise.all([
       fetch(`/api/sessions/${sessionId}`).then((r) => (r.ok ? r.json() as Promise<Session> : Promise.reject())),
       fetch('/api/account').then((r) => (r.ok ? r.json() : null)).catch(() => null),
     ])
       .then(([session, account]) => {
+        if (cancelled) return
         dispatch({ type: 'RESUME_SESSION', id: session.id, workdir: session.workdir, mode: session.mode, ...(session.name ? { name: session.name } : {}) })
         if (account?.model) dispatch({ type: 'MODEL_SET', model: account.model })
         setLoading(false)
       })
-      .catch(() => setError(true))
-  }, [sessionId]) // eslint-disable-line react-hooks/exhaustive-deps
+      .catch(() => { if (!cancelled) setError(true) })
+    return () => { cancelled = true }
+  }, [sessionId, state.sessionId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep URL and context in sync: clear session state whenever this route unmounts.
   // This handles browser Back/Forward navigation, which bypasses the explicit navigate()
@@ -60,7 +63,7 @@ export default function SessionRoute() {
 
   if (error) return <Navigate to="/" replace />
 
-  if (loading) {
+  if (loading || !state.sessionId) {
     return (
       <div className="flex-1 flex items-center justify-center text-text-dim text-sm">
         Loading session…
