@@ -5,7 +5,6 @@ import { useSession } from '../context/SessionContext'
 import { formatModelName, formatTokens, formatDuration, formatCost } from '../utils/format'
 
 interface SessionHeaderProps {
-  onNewSession: () => void
   onStopSession: () => void
   onSessionsList: () => void
   totalTokens: number
@@ -41,7 +40,6 @@ function StatChip({ label, value, valueClass = 'text-text-secondary' }: StatChip
 }
 
 export default function SessionHeader({
-  onNewSession,
   onStopSession,
   onSessionsList,
   totalTokens,
@@ -123,7 +121,6 @@ export default function SessionHeader({
         <div className="flex items-center gap-2 ml-auto">
           <Link
             to="/new"
-            onClick={(e) => { e.preventDefault(); onNewSession() }}
             className="flex items-center gap-1.5 text-text-muted hover:text-accent text-xs bg-bg-elevated border border-border-subtle hover:border-accent px-2 py-1 rounded transition-colors"
           >
             <Plus size={11} />
