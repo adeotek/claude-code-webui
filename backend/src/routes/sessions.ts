@@ -93,7 +93,7 @@ export async function sessionRoutes(fastify: FastifyInstance) {
     const modeRow = db
       .prepare("SELECT value FROM settings WHERE key = 'session_mode'")
       .get() as { value: string } | undefined
-    const mode = modeRow?.value === 'terminal' ? 'terminal' : 'chat'
+    const mode = modeRow?.value === 'chat' ? 'chat' : 'terminal'
 
     const id = randomUUID()
     const now = Date.now()
@@ -101,7 +101,7 @@ export async function sessionRoutes(fastify: FastifyInstance) {
       'INSERT INTO sessions (id, workdir, name, mode, started_at, last_used) VALUES (?, ?, ?, ?, ?, ?)',
     ).run(id, workdir, name?.trim() || null, mode, now, now)
 
-    return reply.status(201).send({ sessionId: id })
+    return reply.status(201).send({ sessionId: id, mode })
   })
 
   fastify.post<{ Params: { id: string } }>('/api/sessions/:id/stop', async (req, reply) => {

@@ -7,7 +7,6 @@ interface SessionListProps {
   sessions: Session[]
   onStop: (sessionId: string) => void
   onDelete: (sessionId: string) => void
-  onNewSession: () => void
 }
 
 
@@ -19,7 +18,6 @@ export default function SessionList({
   sessions,
   onStop,
   onDelete,
-  onNewSession,
 }: SessionListProps) {
   async function handleDelete(sessionId: string) {
     if (!window.confirm('Delete this session? This cannot be undone.')) return
@@ -38,7 +36,6 @@ export default function SessionList({
         <span className="text-text-muted text-xs uppercase tracking-widest">Sessions</span>
         <Link
           to="/new"
-          onClick={(e) => { e.preventDefault(); onNewSession() }}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-accent text-black hover:bg-accent-hover rounded transition-colors"
         >
           <Plus size={11} />
@@ -53,7 +50,6 @@ export default function SessionList({
             <p className="text-text-muted text-sm">No sessions yet</p>
             <Link
               to="/new"
-              onClick={(e) => { e.preventDefault(); onNewSession() }}
               className="flex items-center gap-2 px-4 py-2 text-sm bg-accent text-black hover:bg-accent-hover rounded transition-colors"
             >
               <Plus size={14} />

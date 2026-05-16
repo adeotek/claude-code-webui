@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useSession } from '../context/SessionContext'
 import { useWebSocket } from '../hooks/useWebSocket'
@@ -10,20 +10,17 @@ import SessionHeader from '../components/SessionHeader'
 import MessageList from '../components/MessageList'
 import ChatInput from '../components/ChatInput'
 import TerminalDrawer, { type TerminalDrawerHandle } from '../components/TerminalDrawer'
-import NewSessionModal from '../components/NewSessionModal'
 import UsageChart from '../components/UsageChart'
 import PermissionDialog from '../components/PermissionDialog'
 import TerminalSession from '../components/TerminalSession'
 
 export default function HomeView() {
   const { state, dispatch } = useSession()
-  const location = useLocation()
   const navigate = useNavigate()
   const terminalRef = useRef<TerminalDrawerHandle>(null)
-  const [showModal, setShowModal] = useState(location.state?.openModal === true)
   const [chartOpen, setChartOpen] = useState(false)
 
-  const { account, usage, sessions, activeSessions, defaultSessionMode, loading, refresh } = useHomeData()
+  const { account, usage, sessions, activeSessions, loading, refresh } = useHomeData()
   // Local sessions state for optimistic deletion
   const [localSessions, setLocalSessions] = useState<Session[] | null>(null)
   const displaySessions = localSessions ?? sessions
@@ -54,22 +51,6 @@ export default function HomeView() {
     })
   }, [send, state.mode])
 
-
-  function handleSessionStart(sessionId: string, workdir: string, name: string | null) {
-    dispatch({ type: 'SESSION_CREATED', sessionId, workdir, mode: defaultSessionMode, ...(name ? { name } : {}) })
-    if (account?.model) dispatch({ type: 'MODEL_SET', model: account.model })
-    setShowModal(false)
-    refresh()
-    navigate(`/session/${sessionId}`)
-  }
-
-  function handleNewSession() {
-    if (state.sessionId) {
-      fetch(`/api/sessions/${state.sessionId}/stop`, { method: 'POST' }).catch(() => {})
-    }
-    dispatch({ type: 'SESSION_CLEARED' })
-    navigate('/new')
-  }
 
   function handleSessionsList() {
     dispatch({ type: 'SESSION_CLEARED' })
@@ -175,13 +156,11 @@ export default function HomeView() {
           />
         )}
         <SessionHeader
-          onNewSession={handleNewSession}
           onStopSession={handleStopSession}
           onSessionsList={handleSessionsList}
           onRename={handleRenameSession}
           sessionName={state.name}
           totalTokens={state.totalTokens}
-
           sessionStartedAt={activeSession?.started_at ?? null}
         />
         <TerminalSession />
@@ -199,13 +178,11 @@ export default function HomeView() {
               />
             )}
             <SessionHeader
-              onNewSession={handleNewSession}
               onStopSession={handleStopSession}
               onSessionsList={handleSessionsList}
               onRename={handleRenameSession}
               sessionName={state.name}
               totalTokens={state.totalTokens}
-    
               sessionStartedAt={activeSession?.started_at ?? null}
             />
             <MessageList messages={state.messages} />
@@ -215,14 +192,11 @@ export default function HomeView() {
               disabled={state.wsState === 'disconnected' || state.wsState === 'error'}
             />
           </div>
-        ) : showModal ? (
-          <NewSessionModal onStart={handleSessionStart} />
         ) : (
           <SessionList
             sessions={displaySessions}
             onStop={handleStopListSession}
             onDelete={handleDelete}
-            onNewSession={() => setShowModal(true)}
           />
         )
       )}

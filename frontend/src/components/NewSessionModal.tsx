@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react'
 import { FolderOpen } from 'lucide-react'
 
 interface NewSessionModalProps {
-  onStart: (sessionId: string, workdir: string, name: string | null) => void
+  onStart: (sessionId: string, workdir: string, name: string | null, mode: 'chat' | 'terminal') => void
+  onCancel?: () => void
 }
 
-export default function NewSessionModal({ onStart }: NewSessionModalProps) {
+export default function NewSessionModal({ onStart, onCancel }: NewSessionModalProps) {
   const [name, setName] = useState('')
   const [workdir, setWorkdir] = useState('')
   const [loading, setLoading] = useState(false)
@@ -73,8 +74,8 @@ export default function NewSessionModal({ onStart }: NewSessionModalProps) {
         body: JSON.stringify(body),
       })
       if (!res.ok) throw new Error(await res.text())
-      const { sessionId } = (await res.json()) as { sessionId: string }
-      onStart(sessionId, workdir.trim(), name.trim() || null)
+      const { sessionId, mode } = (await res.json()) as { sessionId: string; mode: 'chat' | 'terminal' }
+      onStart(sessionId, workdir.trim(), name.trim() || null, mode)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create session')
       setLoading(false)
@@ -142,13 +143,24 @@ export default function NewSessionModal({ onStart }: NewSessionModalProps) {
           </div>
 
           {error && <p className="text-status-red text-xs">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading || !workdir.trim()}
-            className="w-full bg-accent hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed text-black text-sm font-medium py-2 rounded-md transition-colors"
-          >
-            {loading ? 'Starting…' : 'Start session'}
-          </button>
+          <div className="flex gap-2">
+            {onCancel && (
+              <button
+                type="button"
+                onClick={onCancel}
+                className="flex-1 border border-border text-text-secondary hover:text-text-primary hover:border-text-secondary text-sm font-medium py-2 rounded-md transition-colors"
+              >
+                Cancel
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={loading || !workdir.trim()}
+              className="flex-1 bg-accent hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed text-black text-sm font-medium py-2 rounded-md transition-colors"
+            >
+              {loading ? 'Starting…' : 'Start session'}
+            </button>
+          </div>
         </form>
       </div>
     </div>
